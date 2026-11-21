@@ -586,6 +586,7 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="aujourdhui.css">
 <script defer src="aujourdhui.js"></script>
+<script defer src="cloud.js"></script>
 </head>
 <body>
 
@@ -2497,7 +2498,7 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
           <input id="db-supa-url" class="form-control" type="text"
             style="font-size:11px;font-family:monospace"
             placeholder="https://xxxx.supabase.co"
-            value="https://xrpcdfabfqgsdsskvgjo.supabase.co">
+            value="https://seppjannzatoduoperxn.supabase.co">
         </div>
         <div class="form-group">
           <label class="form-label" style="font-size:11px">Clé API anon (public)</label>
@@ -3026,9 +3027,8 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
       "ALTER TABLE clients ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'individuel';",
       "ALTER TABLE clients ADD COLUMN IF NOT EXISTS visits INTEGER DEFAULT 0;",
       "ALTER TABLE clients ADD COLUMN IF NOT EXISTS last_visit TEXT DEFAULT '—';",
-      "ALTER TABLE clients ADD COLUMN IF NOT EXISTS date_creation TEXT DEFAULT '';",
-      "GRANT ALL ON ALL TABLES IN SCHEMA public TO anon;",
-      "GRANT USAGE ON SCHEMA public TO anon;"
+      "ALTER TABLE clients ADD COLUMN IF NOT EXISTS date_creation TEXT DEFAULT '';"
+      /* GRANT ... TO anon supprimé : l'accès aux données passe désormais par Supabase Auth + RLS */
     ].join('\n');
     var modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:9999;display:flex;align-items:center;justify-content:center';
@@ -3273,7 +3273,7 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
     modal.innerHTML = '<div style="background:#0e1528;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:24px;width:600px;max-width:95vw;max-height:80vh;overflow:auto">'
       + '<div style="display:flex;justify-content:space-between;margin-bottom:14px"><strong>📋 Tables SQL — AutoGarage Pro v39</strong>'
       + '<span onclick="this.closest(\'div[style*=fixed]\').remove()" style="cursor:pointer;color:#8899bb;font-size:18px">✕</span></div>'
-      + '<div style="font-size:11px;color:#8899bb;margin-bottom:10px">' + _allTables.length + ' tables | Supabase : <span style="color:#f97316">xrpcdfabfqgsdsskvgjo.supabase.co</span></div>'
+      + '<div style="font-size:11px;color:#8899bb;margin-bottom:10px">' + _allTables.length + ' tables | Supabase : <span style="color:#f97316">seppjannzatoduoperxn.supabase.co</span></div>'
       + rows
       + '<div style="margin-top:14px;padding:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;font-size:11px;color:#22c55e">'
       + '📁 Script complet : <strong>fix_clients_supabase.sql</strong> + <strong>fix_rls_permissions.sql</strong></div></div>';
@@ -17776,8 +17776,8 @@ _dmInit = function() {
 // ════════════════════════════════════════════════════════════════════════════
 
 // ── Configuration Supabase ─────────────────────────────────────────────────
-var _SUPA_URL  = 'https://xrpcdfabfqgsdsskvgjo.supabase.co';
-var _SUPA_KEY  = '';          // ← Coller ici la clé anon publique du projet
+var _SUPA_URL  = 'https://seppjannzatoduoperxn.supabase.co';
+var _SUPA_KEY  = 'sb_publishable_sOEQtfxmCEllwZW_6Qh1LA_vJAY9w4F';   // clé publique (publishable) — l'accès aux données est protégé par la RLS
 var _supaClient = null;
 var _SYNC_DIRTY_KEY = 'gp_sync_dirty_v19';
 
@@ -17819,6 +17819,8 @@ var _SYNC_TABLE_MAP = {
 
 // ── Accès aux tableaux locaux ──────────────────────────────────────────────
 function _syncGetLocalArray(key) {
+  /* accès commun (cloud.js) : gère les const/let non exposés sur window et les modules à stockage local */
+  if (typeof window._gpGetArray === 'function') { var _ga = window._gpGetArray(key); if (_ga) return _ga; }
   // ── Groupe 1 : tables DB principale ──────────────────────────────────────
   if (['clients','vehicles','interventions','stock','factures','personnel','transactions'].indexOf(key) !== -1) {
     return DB[key];
@@ -24215,11 +24217,12 @@ window.printFicheVie = window.exportFichePDF;
       var sk = localStorage.getItem('gp_supa_key'); if (sk && sk.length > 10) key = sk;
       var su = localStorage.getItem('gp_supa_url'); if (su && su.length > 10) url = su;
     } catch(e) {}
+    /* AutoGarage : projet cloud fixé (cloud.js purge les anciens réglages) */
     return { url: (url || '').replace(/\/$/, ''), key: key || '' };
   }
 
   /* ── XHR helper : retourne une Promise ───────────────────────────────── */
-  function _xhr(method, url, headers, body) {
+  function _xhr(method, url, headers, body, _retried) {
     return new Promise(function(resolve, reject) {
       var req = new XMLHttpRequest();
       req.open(method, url, true);
@@ -24230,6 +24233,13 @@ window.printFicheVie = window.exportFichePDF;
           var data = null;
           try { data = req.responseText ? JSON.parse(req.responseText) : null; } catch(e) {}
           resolve(data);
+        } else if (req.status === 401 && !_retried && typeof window._cloudRefresh === 'function') {
+          /* jeton expiré : on le renouvelle puis on rejoue la requête une fois */
+          window._cloudRefresh().then(function(tok) {
+            var h2 = {}; Object.keys(headers).forEach(function(k) { h2[k] = headers[k]; });
+            if (tok) h2['Authorization'] = 'Bearer ' + tok;
+            _xhr(method, url, h2, body, true).then(resolve, reject);
+          }).catch(function() { reject(new Error('Session expirée — reconnectez-vous')); });
         } else {
           var msg = '';
           try { msg = JSON.parse(req.responseText).message || req.responseText; } catch(e) { msg = req.responseText || ('HTTP ' + req.status); }
@@ -24243,7 +24253,9 @@ window.printFicheVie = window.exportFichePDF;
   }
 
   function _headers(key, extra) {
-    var h = { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json', 'Accept': 'application/json' };
+    var tok = (typeof window._cloudToken === 'function') ? window._cloudToken() : null;
+    var h = { 'apikey': key, 'Content-Type': 'application/json', 'Accept': 'application/json' };
+    if (tok) h['Authorization'] = 'Bearer ' + tok;
     if (extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
     return h;
   }
@@ -24280,10 +24292,16 @@ window.printFicheVie = window.exportFichePDF;
   function _xhrUpsert(table, rows) {
     var cn = _conn();
     if (!cn.url || !cn.key) return Promise.reject(new Error('Clé Supabase manquante — configurez dans Paramétrage'));
-    var normalized = _normalizeRows(rows);
-    return _xhr('POST', cn.url + '/rest/v1/' + table,
+    if (!(typeof window._cloudToken === 'function' && window._cloudToken())) return Promise.reject(new Error('Non connecté au cloud — connectez-vous avec votre e-mail'));
+    /* format document : une ligne = { id (texte), data (JSON complet de l'enregistrement) } */
+    var docs = [];
+    rows.forEach(function(r) {
+      if (r && r.id !== undefined && r.id !== null && r.id !== '') docs.push({ id: String(r.id), data: r });
+    });
+    if (!docs.length) return Promise.resolve(null);
+    return _xhr('POST', cn.url + '/rest/v1/' + table + '?on_conflict=id',
       _headers(cn.key, { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-      JSON.stringify(normalized)
+      JSON.stringify(docs)
     );
   }
 
@@ -24291,10 +24309,12 @@ window.printFicheVie = window.exportFichePDF;
   function _xhrSelect(table) {
     var cn = _conn();
     if (!cn.url || !cn.key) return Promise.reject(new Error('Clé Supabase manquante'));
-    return _xhr('GET', cn.url + '/rest/v1/' + table + '?select=*&limit=10000',
+    return _xhr('GET', cn.url + '/rest/v1/' + table + '?select=data&order=id&limit=10000',
       _headers(cn.key, { 'Prefer': 'count=none' }),
       null
-    );
+    ).then(function(rows) {
+      return Array.isArray(rows) ? rows.map(function(r) { return r.data; }).filter(Boolean) : rows;
+    });
   }
 
   /* ── DELETE ALL ───────────────────────────────────────────────────────── */
@@ -24388,7 +24408,7 @@ window.printFicheVie = window.exportFichePDF;
 
       /* UPSERT par batch de 500 */
       var copy  = arr.slice();
-      var batch_sz = 500;
+      var batch_sz = 100;
       var batches = [];
       while (copy.length) batches.push(copy.splice(0, batch_sz));
 
@@ -24430,7 +24450,8 @@ window.printFicheVie = window.exportFichePDF;
       if (!pending.length) {
         window._GP_PULL_IN_PROGRESS = false;
         /* Sauvegarder DB principale */
-        try { if (window.DB) localStorage.setItem('gp_db', JSON.stringify(window.DB)); } catch(e) {}
+        try { if (typeof DB !== 'undefined') localStorage.setItem('gp_db', JSON.stringify(DB)); } catch(e) {}
+        if (typeof window._gpAfterPull === 'function') window._gpAfterPull();
         /* Vider dirty : données cloud = données locales */
         try { localStorage.removeItem('gp_sync_dirty_v19'); } catch(e) {}
         if (typeof _syncSetBadge === 'function') _syncSetBadge('synced');
@@ -24448,28 +24469,7 @@ window.printFicheVie = window.exportFichePDF;
       _xhrSelect(cfg.table)
         .then(function(data) {
           if (!Array.isArray(data) || !data.length) { pullNext(); return; }
-          if (dbKeys.indexOf(key) !== -1) {
-            if (window.DB && window.DB[key] !== undefined) window.DB[key] = data;
-          } else {
-            var vn = varMap[key];
-            if (vn) {
-              if (typeof window[vn] !== 'undefined' && Array.isArray(window[vn])) {
-                window[vn].length = 0;
-                data.forEach(function(r){ window[vn].push(r); });
-              } else {
-                /* const non sur window : accès direct si disponible */
-                try {
-                  if (key === 'depenses'   && typeof DB_DEPENSES   !== 'undefined') { DB_DEPENSES.length=0;   data.forEach(function(r){DB_DEPENSES.push(r);}); }
-                  if (key === 'entretien'  && typeof DB_ENTRETIEN  !== 'undefined') { DB_ENTRETIEN.length=0;  data.forEach(function(r){DB_ENTRETIEN.push(r);}); }
-                  if (key === 'vt'         && typeof DB_VT         !== 'undefined') { DB_VT.length=0;         data.forEach(function(r){DB_VT.push(r);}); }
-                  if (key === 'rdv'        && typeof DB_RDV        !== 'undefined') { DB_RDV.length=0;        data.forEach(function(r){DB_RDV.push(r);}); }
-                  if (key === 'commandes'  && typeof DB_COMMANDES  !== 'undefined') { DB_COMMANDES.length=0;  data.forEach(function(r){DB_COMMANDES.push(r);}); }
-                  if (key === 'recettes'   && typeof DB_RECETTES   !== 'undefined') { DB_RECETTES.length=0;   data.forEach(function(r){DB_RECETTES.push(r);}); }
-                  if (key === 'fournisseurs' && typeof DB_FOURNISSEURS !== 'undefined') { DB_FOURNISSEURS.length=0; data.forEach(function(r){DB_FOURNISSEURS.push(r);}); }
-                } catch(ignore) {}
-              }
-            }
-          }
+          if (typeof window._gpSetArray === 'function') { window._gpSetArray(key, data); }
           pullNext();
         })
         .catch(function() { pullNext(); });
