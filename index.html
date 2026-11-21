@@ -11408,7 +11408,7 @@ function onVehFlotteChange(flotteId) {
   var f = fl.find(function(x){ return x.id === flotteId; });
   if (!f) { box.style.display = 'none'; return; }
   box.style.display = 'block';
-  box.innerHTML = '&#127970; <b>' + (f.nom||'') + '</b>' +
+  box.innerHTML = '&#127970; <b>' + esc(f.nom||'') + '</b>' +
     (f.secteur ? ' · ' + f.secteur : '') +
     (f.contact ? ' · &#128100; ' + f.contact : '') +
     (f.tel     ? ' · &#128222; ' + f.tel     : '');
@@ -12617,7 +12617,7 @@ function mvtFileLoad(type, input) {
       if (file.type.startsWith('image/')) {
         previewEl.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:120px;border-radius:6px;border:1px solid var(--border)">';
       } else {
-        previewEl.innerHTML = '<div style="padding:8px 12px;background:var(--bg-base);border-radius:6px;font-size:12px;color:var(--blue)">📄 ' + file.name + ' — PDF joint ✓</div>';
+        previewEl.innerHTML = '<div style="padding:8px 12px;background:var(--bg-base);border-radius:6px;font-size:12px;color:var(--blue)">📄 ' + esc(file.name) + ' — PDF joint ✓</div>';
       }
     }
   };
@@ -16656,7 +16656,7 @@ function dmHardReset() {
     'Cette action va :\n\n• Supprimer TOUTES les données\n• Effacer le localStorage\n• Recharger l\'application\n\nImpossible d\'annuler. Continuer ?',
     function() {
       Object.keys(CSV_SCHEMAS).forEach(function(k) { var arr = _dmGetArray(k); if (arr) arr.length = 0; });
-      try { localStorage.clear(); } catch(e) {
+      try { Object.keys(localStorage).filter(function(k){ return /^(gp_|sf_)/.test(k); }).forEach(function(k){ localStorage.removeItem(k); }); } catch(e) {
         ['gp_db_v19','gp_db_v20','gp_modules_v20','gp_transactions','gp_fact_statuts','gp_dm_wiped','sf_flottes','sf_contrats_fl','sf_carburant_fl','sf_maint_prev','sf_diagnostics','sf_outillage','sf_outillage_prets'].forEach(function(k){ try{localStorage.removeItem(k);}catch(ex){} });
       }
       toast('Réinitialisation en cours...', 'info');
@@ -19257,7 +19257,7 @@ if (document.readyState === 'loading') {
   function _fillContVehicules(sel){
     var s=document.getElementById('cont-vehicules'); if(!s) return;
     sel=sel||[];
-    s.innerHTML=(DB.vehicles||[]).map(function(v){var c=(DB.clients||[]).find(function(c){return c.id===v.client_id;})||{};var chk=sel.some(function(id){return id==v.id;});return '<option value="'+v.id+'"'+(chk?' selected':'')+'>'+v.plaque+' - '+v.marque+' '+(v.modele||'')+' ('+(c.nom||'?')+')</option>';}).join('');
+    s.innerHTML=(DB.vehicles||[]).map(function(v){var c=(DB.clients||[]).find(function(c){return c.id===v.client_id;})||{};var chk=sel.some(function(id){return id==v.id;});return '<option value="'+v.id+'"'+(chk?' selected':'')+'>'+esc(v.plaque)+' - '+esc(v.marque)+' '+esc(v.modele||'')+' ('+esc(c.nom||'?')+')</option>';}).join('');
   }
 
   window.openNewContrat = function(flotteId) {
@@ -19298,7 +19298,7 @@ if (document.readyState === 'loading') {
   /* ══ CRUD CARBURANT ═════════════════════════════════════ */
   function _fillCarbuVehicles(){
     var s=document.getElementById('carbu-vehicle'); if(!s) return;
-    s.innerHTML='<option value="">- Selectionner -</option>'+(DB.vehicles||[]).map(function(v){return '<option value="'+v.id+'">'+v.plaque+' - '+v.marque+' '+(v.modele||'')+'</option>';}).join('');
+    s.innerHTML='<option value="">- Selectionner -</option>'+(DB.vehicles||[]).map(function(v){return '<option value="'+v.id+'">'+esc(v.plaque)+' - '+esc(v.marque)+' '+esc(v.modele||'')+'</option>';}).join('');
   }
   window.openNewCarburant = function() {
     ['carbu-edit-id','carbu-litres','carbu-montant','carbu-km','carbu-conducteur','carbu-station'].forEach(function(id){_set(id,'');});
@@ -19366,7 +19366,7 @@ if (document.readyState === 'loading') {
 
   function _fillMPVehicles(vehId){
     var s=document.getElementById('mp-vehicle'); if(!s) return;
-    s.innerHTML='<option value="">- Selectionner -</option>'+(DB.vehicles||[]).map(function(v){return '<option value="'+v.id+'"'+(v.id==vehId?' selected':'')+'>'+v.plaque+' - '+v.marque+' '+(v.modele||'')+'</option>';}).join('');
+    s.innerHTML='<option value="">- Selectionner -</option>'+(DB.vehicles||[]).map(function(v){return '<option value="'+v.id+'"'+(v.id==vehId?' selected':'')+'>'+esc(v.plaque)+' - '+esc(v.marque)+' '+esc(v.modele||'')+'</option>';}).join('');
     if(vehId) s.value=vehId;
   }
   window.openNewMaintPrev = function(vehId) {
@@ -19578,7 +19578,7 @@ if (document.readyState === 'loading') {
     var f = fl.find(function(x){return x.id===flotteId;});
     if (!f) { box.style.display='none'; return; }
     box.style.display='block';
-    box.innerHTML = '🏢 <b>'+(f.nom||'')+'</b>' +
+    box.innerHTML = '🏢 <b>'+esc(f.nom||'')+'</b>' +
       (f.secteur?' · '+f.secteur:'') +
       (f.contact?' · 👤 '+f.contact:'') +
       (f.tel?' · 📞 '+f.tel:'') +
@@ -20497,9 +20497,6 @@ if (document.readyState === 'loading') {
 <!-- QR Code library (embarquée offline via CDN cdnjs) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
-<!-- QR Code library (embarquée offline via CDN cdnjs) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
-
 <!-- ═══════════════════════════════════════════════════════
      SFSELECTSYNC — Synchronisation centralisée des selects
      Interconnexion automatique de tous les modules
@@ -21349,13 +21346,13 @@ if (document.readyState === 'loading') {
             '<div style="display:flex;align-items:center;gap:4px">'+
               '<span style="font-size:9px;color:var(--text-dim);width:22px">MO</span>'+
               '<input type="number" id="mo-'+item.id+'" value="'+moVal+'" min="0" step="500"'+
-                ' onchange="_onPrixChange(''+item.id+'','mo',this.value)"'+
+                ' onchange="_onPrixChange(\''+item.id+'\',\'mo\',this.value)"'+
                 ' style="width:80px;font-size:11px;font-family:var(--font-mono);background:var(--bg-base);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--text-main);text-align:right">'+
             '</div>'+
             '<div style="display:flex;align-items:center;gap:4px">'+
               '<span style="font-size:9px;color:var(--text-dim);width:22px">Pce</span>'+
               '<input type="number" id="piece-'+item.id+'" value="'+pieceVal+'" min="0" step="500"'+
-                ' onchange="_onPrixChange(''+item.id+'','piece',this.value)"'+
+                ' onchange="_onPrixChange(\''+item.id+'\',\'piece\',this.value)"'+
                 ' style="width:80px;font-size:11px;font-family:var(--font-mono);background:var(--bg-base);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--text-main);text-align:right">'+
             '</div>'+
           '</div>'+
@@ -21364,7 +21361,7 @@ if (document.readyState === 'loading') {
       : '<div class="diag-item-cout" id="cout-'+item.id+'">'+_coutItemVal(moVal,pieceVal,st)+'</div>';
     return '<div class="diag-item'+(st!=='ok'?' has-issue':'')+'" id="row-'+item.id+'">' +
       '<div class="diag-item-label">'+_x(item.label)+'</div>' +
-      '<input class="diag-item-note" placeholder="Observation..." value="'+_x(note)+'" onchange="_onNoteChange(''+item.id+'',this.value)">' +
+      '<input class="diag-item-note" placeholder="Observation..." value="'+_x(note)+'" onchange="_onNoteChange(\''+item.id+'\',this.value)">' +
       '<div class="diag-radio-group">' +
         _radio(n, item.id, 'ok',         st, '&#9989; OK',         'diag-r-ok   diag-lbl-ok') +
         _radio(n, item.id, 'surveiller', st, '&#128065; Surveill.', 'diag-r-surv diag-lbl-surv') +
@@ -21378,7 +21375,7 @@ if (document.readyState === 'loading') {
   function _radio(name, itemId, val, checked, label, cls) {
     var pair = cls.trim().split(/\s+/);
     var rCls = pair[0]||'', lCls = pair[1]||'';
-    return '<input type="radio" class="diag-radio '+rCls+'" name="'+name+'" id="r-'+itemId+'-'+val+'" value="'+val+'"'+(checked===val?' checked':'')+' onchange="_onStatutChange(''+itemId+'',''+val+'')">' +
+    return '<input type="radio" class="diag-radio '+rCls+'" name="'+name+'" id="r-'+itemId+'-'+val+'" value="'+val+'"'+(checked===val?' checked':'')+' onchange="_onStatutChange(\''+itemId+'\',\''+val+'\')">' +
            '<label class="diag-radio-lbl '+lCls+'" for="r-'+itemId+'-'+val+'">'+label+'</label>';
   }
 
@@ -21447,13 +21444,13 @@ if (document.readyState === 'loading') {
               '<div style="display:flex;align-items:center;gap:4px">'+
                 '<span style="font-size:9px;color:var(--text-dim);width:22px">MO</span>'+
                 '<input type="number" id="mo-'+itemId+'" value="'+mo+'" min="0" step="500"'+
-                  ' onchange="_onPrixChange(''+itemId+'','mo',this.value)"'+
+                  ' onchange="_onPrixChange(\''+itemId+'\',\'mo\',this.value)"'+
                   ' style="width:80px;font-size:11px;font-family:var(--font-mono);background:var(--bg-base);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--text-main);text-align:right">'+
               '</div>'+
               '<div style="display:flex;align-items:center;gap:4px">'+
                 '<span style="font-size:9px;color:var(--text-dim);width:22px">Pce</span>'+
                 '<input type="number" id="piece-'+itemId+'" value="'+piece+'" min="0" step="500"'+
-                  ' onchange="_onPrixChange(''+itemId+'','piece',this.value)"'+
+                  ' onchange="_onPrixChange(\''+itemId+'\',\'piece\',this.value)"'+
                   ' style="width:80px;font-size:11px;font-family:var(--font-mono);background:var(--bg-base);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--text-main);text-align:right">'+
               '</div>'+
             '</div>'+
@@ -21973,7 +21970,7 @@ if (document.readyState === 'loading') {
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
 
           /* FINE */
-          '<button id="btn-choix-fine" onclick="window._choixTypeFacture('FINE')" style="' +
+          '<button id="btn-choix-fine" onclick="window._choixTypeFacture(\'FINE\')" style="' +
             'background:rgba(99,102,241,.12);border:2px solid rgba(99,102,241,.4);border-radius:12px;' +
             'padding:16px 12px;cursor:pointer;text-align:left;color:#f0f4ff;transition:all .2s">' +
             '<div style="font-size:20px;margin-bottom:6px">📋</div>' +
@@ -21982,7 +21979,7 @@ if (document.readyState === 'loading') {
           '</button>' +
 
           /* Simple */
-          '<button id="btn-choix-simple" onclick="window._choixTypeFacture('simple')" style="' +
+          '<button id="btn-choix-simple" onclick="window._choixTypeFacture(\'simple\')" style="' +
             'background:rgba(249,115,22,.12);border:2px solid rgba(249,115,22,.4);border-radius:12px;' +
             'padding:16px 12px;cursor:pointer;text-align:left;color:#f0f4ff;transition:all .2s">' +
             '<div style="font-size:20px;margin-bottom:6px">🧾</div>' +
@@ -21993,7 +21990,7 @@ if (document.readyState === 'loading') {
         '</div>' +
 
         '<div style="text-align:center">' +
-          '<button onclick="document.getElementById('modal-choix-facture-type').remove()" ' +
+          '<button onclick="document.getElementById(\'modal-choix-facture-type\').remove()" ' +
             'style="padding:8px 20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#8899bb;font-size:12px;cursor:pointer">' +
             'Annuler' +
           '</button>' +
