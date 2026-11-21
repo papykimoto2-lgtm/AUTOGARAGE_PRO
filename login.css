@@ -1,0 +1,10 @@
+/* Écran de connexion : afficher le mot de passe, se souvenir de moi */
+.login-pw{position:relative;margin-bottom:16px}
+.login-pw .login-input{margin-bottom:0;padding-right:48px}
+#login-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:8px;background:transparent;color:var(--text-sub);font-size:17px;cursor:pointer;line-height:1}
+#login-eye:hover,#login-eye:focus-visible{background:var(--bg-hover);color:var(--text-main)}
+.login-remember{margin:-4px 0 14px}
+.login-remember label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-main);cursor:pointer;padding:4px 0}
+.login-remember input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.login-remember-hint{font-size:11px;color:var(--text-dim);margin:0 0 0 26px;line-height:1.4}
+#login-resume{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:var(--blue-soft);color:var(--blue);font-size:13px;text-align:center}

@@ -52,6 +52,7 @@ Prérequis : site servi en **HTTPS** (Vercel le fait). L'application installée 
 - **Identifiant sans `@`** : mode **local hors ligne**, données de l'appareil uniquement, sans synchronisation.
 - Les données sont d'abord enregistrées **sur l'appareil**, puis synchronisées vers le cloud (pastille *Synchronisé / Hors ligne* en haut). Première connexion : envoi des données locales ; ensuite : envoi des modifications puis réception.
 - Jeton renouvelé automatiquement ; déconnexion propre.
+- **Afficher le mot de passe** (œil) et **Se souvenir de moi** sur l'écran de connexion : coché, l'e-mail est pré-rempli et la session reste ouverte (reconnexion automatique, y compris hors ligne grâce au profil mis en cache) ; décoché, la session est limitée au navigateur ouvert. Le mot de passe n'est jamais stocké par l'application. Une session révoquée ou un compte désactivé ramène à l'écran de connexion.
 
 ## Architecture
 
@@ -61,7 +62,7 @@ Application web **statique**, sans étape de compilation.
 |---|---|
 | `index.html` | Application principale (interface, modules, moteur de synchronisation) |
 | `aujourdhui.js` / `.css` | Bloc *Aujourd'hui*, recherche globale, thème, installation |
-| `cloud.js` | Connexion Supabase Auth, profil et rôle, jeton, première synchronisation, mode démonstration |
+| `cloud.js` / `login.css` | Connexion Supabase Auth, profil et rôle, jeton, mot de passe visible, « se souvenir de moi », reconnexion automatique, première synchronisation, mode démonstration |
 | `aide.js` / `aide.css` | Aide intégrée et bandeau de démonstration |
 | `demo.html` | Page de démonstration (données fictives, sauvegarde puis restauration du poste) |
 | `install.js` / `install.css` | Installation de l'application : un clic (Chrome, Edge, Samsung Internet) ou mode d'emploi par appareil (iPhone/iPad, Mac, Firefox) |
