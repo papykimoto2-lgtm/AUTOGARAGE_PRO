@@ -166,17 +166,29 @@
 
   /* ── Couleur du thème (comme Angel's) ──────────────────────────────── */
   var THEMES = [
-    { n: 'Orange', a: '#f97316', b: '#fb923c', g: 'rgba(249,115,22,0.3)' },
-    { n: 'Bleu', a: '#3b82f6', b: '#60a5fa', g: 'rgba(59,130,246,0.3)' },
-    { n: 'Vert', a: '#22c55e', b: '#4ade80', g: 'rgba(34,197,94,0.3)' },
-    { n: 'Violet', a: '#a855f7', b: '#c084fc', g: 'rgba(168,85,247,0.3)' },
-    { n: 'Rouge', a: '#ef4444', b: '#f87171', g: 'rgba(239,68,68,0.3)' },
-    { n: 'Turquoise', a: '#14b8a6', b: '#2dd4bf', g: 'rgba(20,184,166,0.3)' }
+    { n: 'Orange', a: '#f97316', b: '#fb923c', g: 'rgba(249,115,22,0.3)', h: null },
+    { n: 'Bleu', a: '#3b82f6', b: '#60a5fa', g: 'rgba(59,130,246,0.3)', h: 215 },
+    { n: 'Vert', a: '#22c55e', b: '#4ade80', g: 'rgba(34,197,94,0.3)', h: 152 },
+    { n: 'Violet', a: '#a855f7', b: '#c084fc', g: 'rgba(168,85,247,0.3)', h: 268 },
+    { n: 'Rouge', a: '#ef4444', b: '#f87171', g: 'rgba(239,68,68,0.3)', h: 352 },
+    { n: 'Turquoise', a: '#14b8a6', b: '#2dd4bf', g: 'rgba(20,184,166,0.3)', h: 182 }
   ];
   function applyTheme(i) {
     var t = THEMES[i] || THEMES[0], r = document.documentElement.style;
     r.setProperty('--accent', t.a); r.setProperty('--accent2', t.b); r.setProperty('--accent-glow', t.g);
-    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', '#0a0f1e');
+    var bg = ['--bg-deep', '--bg-base', '--bg-card', '--bg-card2', '--bg-hover', '--border', '--border-bright'];
+    if (t.h == null) { bg.forEach(function (k) { r.removeProperty(k); }); }   /* thème d'origine (bleu nuit) */
+    else {
+      var H = t.h;
+      r.setProperty('--bg-deep', 'hsl(' + H + ',45%,5%)');
+      r.setProperty('--bg-base', 'hsl(' + H + ',42%,7%)');
+      r.setProperty('--bg-card', 'hsl(' + H + ',38%,10%)');
+      r.setProperty('--bg-card2', 'hsl(' + H + ',34%,13%)');
+      r.setProperty('--bg-hover', 'hsl(' + H + ',32%,19%)');
+      r.setProperty('--border', 'hsla(' + H + ',60%,90%,0.09)');
+      r.setProperty('--border-bright', 'hsla(' + H + ',60%,90%,0.18)');
+    }
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', t.h == null ? '#0a0f1e' : 'hsl(' + t.h + ',42%,7%)');
     try { localStorage.setItem('gp_theme_idx', String(i)); } catch (x) {}
     var dots = document.querySelectorAll('.aj-dot');
     for (var k = 0; k < dots.length; k++) dots[k].classList.toggle('on', k === i);

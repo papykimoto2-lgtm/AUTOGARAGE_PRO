@@ -35,3 +35,4 @@
 .aj-dots{display:flex;gap:8px;padding:6px 2px 2px}
 .aj-dot{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
 .aj-dot.on{border-color:var(--text-main);box-shadow:0 0 0 2px var(--bg-card)}
+.nav-item.active{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
