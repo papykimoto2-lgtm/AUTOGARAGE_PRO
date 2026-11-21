@@ -173,27 +173,80 @@
     { n: 'Rouge', a: '#ef4444', b: '#f87171', g: 'rgba(239,68,68,0.3)', h: 352 },
     { n: 'Turquoise', a: '#14b8a6', b: '#2dd4bf', g: 'rgba(20,184,166,0.3)', h: 182 }
   ];
-  function applyTheme(i) {
-    var t = THEMES[i] || THEMES[0], r = document.documentElement.style;
-    r.setProperty('--accent', t.a); r.setProperty('--accent2', t.b); r.setProperty('--accent-glow', t.g);
-    var bg = ['--bg-deep', '--bg-base', '--bg-card', '--bg-card2', '--bg-hover', '--border', '--border-bright'];
-    if (t.h == null) { bg.forEach(function (k) { r.removeProperty(k); }); }   /* thème d'origine (bleu nuit) */
-    else {
-      var H = t.h;
-      r.setProperty('--bg-deep', 'hsl(' + H + ',45%,5%)');
-      r.setProperty('--bg-base', 'hsl(' + H + ',42%,7%)');
-      r.setProperty('--bg-card', 'hsl(' + H + ',38%,10%)');
-      r.setProperty('--bg-card2', 'hsl(' + H + ',34%,13%)');
-      r.setProperty('--bg-hover', 'hsl(' + H + ',32%,19%)');
-      r.setProperty('--border', 'hsla(' + H + ',60%,90%,0.09)');
-      r.setProperty('--border-bright', 'hsla(' + H + ',60%,90%,0.18)');
+  /* Version « jour » : accents plus foncés pour rester lisibles sur fond clair */
+  var DARK_ACCENT = ['#b83c0a', '#1d4ed8', '#15803d', '#7e22ce', '#b91c1c', '#0f766e'];
+
+  var MODE_KEY = 'gp_mode';                 /* 'dark' (nuit, défaut) | 'light' (jour) | 'auto' (suit l'appareil) */
+  function getMode() { var m = null; try { m = localStorage.getItem(MODE_KEY); } catch (x) {} return (m === 'light' || m === 'auto') ? m : 'dark'; }
+  function systemLight() { try { return !!(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches); } catch (x) { return false; } }
+  function isLight() { var m = getMode(); return m === 'light' || (m === 'auto' && systemLight()); }
+  function themeIdx() { var i = 0; try { i = Number(localStorage.getItem('gp_theme_idx')) || 0; } catch (x) {} return THEMES[i] ? i : 0; }
+
+  /* Calcule et applique toutes les variables : couleur d'accent × jour/nuit */
+  function applyPalette() {
+    var i = themeIdx(), t = THEMES[i], r = document.documentElement.style, light = isLight();
+    var root = document.documentElement;
+    root.setAttribute('data-ui', light ? 'light' : 'dark');
+
+    var all = ['--bg-deep', '--bg-base', '--bg-card', '--bg-card2', '--bg-hover', '--border', '--border-bright',
+               '--text-main', '--text-sub', '--text-dim', '--shadow', '--shadow-card',
+               '--green', '--red', '--yellow', '--blue', '--purple'];
+    all.forEach(function (k) { r.removeProperty(k); });
+
+    var acc = light ? DARK_ACCENT[i] : t.a;
+    r.setProperty('--accent', acc); r.setProperty('--accent2', light ? t.a : t.b); r.setProperty('--accent-glow', light ? t.g.replace('0.3', '0.18') : t.g);
+
+    if (light) {
+      var H = t.h == null ? 30 : t.h, S = t.h == null ? 18 : 28;
+      r.setProperty('--bg-deep', 'hsl(' + H + ',' + S + '%,94%)');
+      r.setProperty('--bg-base', 'hsl(' + H + ',' + S + '%,97%)');
+      r.setProperty('--bg-card', '#ffffff');
+      r.setProperty('--bg-card2', 'hsl(' + H + ',' + S + '%,95%)');
+      r.setProperty('--bg-hover', 'hsl(' + H + ',' + (S + 6) + '%,90%)');
+      r.setProperty('--border', 'rgba(15,23,42,0.10)');
+      r.setProperty('--border-bright', 'rgba(15,23,42,0.20)');
+      r.setProperty('--text-main', '#0f172a');
+      r.setProperty('--text-sub', '#475569');
+      r.setProperty('--text-dim', '#556274');
+      r.setProperty('--shadow', '0 8px 28px rgba(15,23,42,0.14)');
+      r.setProperty('--shadow-card', '0 2px 10px rgba(15,23,42,0.08)');
+      r.setProperty('--green', '#166534'); r.setProperty('--red', '#b91c1c'); r.setProperty('--yellow', '#92400e');
+      r.setProperty('--blue', '#1d4ed8'); r.setProperty('--purple', '#7e22ce');
+    } else if (t.h != null) {
+      var D = t.h;
+      r.setProperty('--bg-deep', 'hsl(' + D + ',45%,5%)');
+      r.setProperty('--bg-base', 'hsl(' + D + ',42%,7%)');
+      r.setProperty('--bg-card', 'hsl(' + D + ',38%,10%)');
+      r.setProperty('--bg-card2', 'hsl(' + D + ',34%,13%)');
+      r.setProperty('--bg-hover', 'hsl(' + D + ',32%,19%)');
+      r.setProperty('--border', 'hsla(' + D + ',60%,90%,0.09)');
+      r.setProperty('--border-bright', 'hsla(' + D + ',60%,90%,0.18)');
     }
-    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', t.h == null ? '#0a0f1e' : 'hsl(' + t.h + ',42%,7%)');
-    try { localStorage.setItem('gp_theme_idx', String(i)); } catch (x) {}
+
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute('content', light ? '#ffffff' : (t.h == null ? '#0a0f1e' : 'hsl(' + t.h + ',42%,7%)'));
+    var cs = document.querySelector('meta[name="color-scheme"]'); if (cs) cs.setAttribute('content', light ? 'light' : 'dark');
+
     var dots = document.querySelectorAll('.aj-dot');
     for (var k = 0; k < dots.length; k++) dots[k].classList.toggle('on', k === i);
+    var seg = document.querySelectorAll('.aj-mode-btn'), mode = getMode();
+    for (var s = 0; s < seg.length; s++) seg[s].classList.toggle('on', seg[s].getAttribute('data-mode') === mode);
+    var q = $('mode-btn'); if (q) { q.textContent = light ? '🌙' : '☀️'; q.title = light ? 'Passer en mode nuit' : 'Passer en mode jour'; q.setAttribute('aria-label', q.title); }
   }
-  (function () { var i = 0; try { i = Number(localStorage.getItem('gp_theme_idx')) || 0; } catch (x) {} if (i) applyTheme(i); })();
+
+  function applyTheme(i) { try { localStorage.setItem('gp_theme_idx', String(i)); } catch (x) {} applyPalette(); }
+  function setMode(m) { try { localStorage.setItem(MODE_KEY, m); } catch (x) {} applyPalette(); }
+  window._ajSetMode = setMode;
+  window._ajIsLight = isLight;
+
+  /* mode « auto » : suit le réglage de l'appareil en temps réel */
+  try {
+    var mq = window.matchMedia('(prefers-color-scheme: light)');
+    var onSys = function () { if (getMode() === 'auto') applyPalette(); };
+    if (mq.addEventListener) mq.addEventListener('change', onSys); else if (mq.addListener) mq.addListener(onSys);
+  } catch (x) {}
+
+  applyPalette();                           /* le plus tôt possible : évite un flash de la mauvaise palette */
 
   /* ── Recherche globale (touche « / » ou Ctrl+K) ───────────────────── */
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
@@ -251,6 +304,20 @@
 
   /* L'installation (PWA) est gérée par install.js ; ici seulement le bouton du menu. */
 
+  /* Bouton rapide jour/nuit dans la barre du haut (visible aussi sur téléphone) */
+  function addModeButton() {
+    if ($('mode-btn')) return true;
+    var bell = $('notif-btn'); if (!bell || !bell.parentNode) return false;
+    var b = document.createElement('div');
+    b.id = 'mode-btn'; b.className = 'topbar-notif'; b.setAttribute('role', 'button'); b.tabIndex = 0;
+    var flip = function () { setMode(isLight() ? 'dark' : 'light'); };
+    b.addEventListener('click', flip);
+    b.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); flip(); } });
+    bell.parentNode.insertBefore(b, bell);
+    applyPalette();
+    return true;
+  }
+
   function addSidebarButtons() {
     var nav = document.querySelector('.sidebar-nav-wrap');
     if (!nav || $('aj-side')) return;
@@ -258,13 +325,20 @@
     wrap.id = 'aj-side';
     wrap.innerHTML = '<button class="aj-side-btn" onclick="_ajOpenSearch()">🔍 Rechercher <kbd>/</kbd></button>' +
       '<button class="aj-side-btn" id="aj-install" onclick="window._instOpen && window._instOpen()">📲 Installer l\'application</button>' +
+      '<div class="aj-mode" role="group" aria-label="Affichage jour / nuit">' +
+        '<button class="aj-mode-btn" data-mode="dark" title="Nuit">🌙 Nuit</button>' +
+        '<button class="aj-mode-btn" data-mode="light" title="Jour">☀️ Jour</button>' +
+        '<button class="aj-mode-btn" data-mode="auto" title="Suit le réglage de l\'appareil">🌓 Auto</button></div>' +
       '<div class="aj-dots" aria-label="Couleur du thème">' + THEMES.map(function (t, i) {
         return '<button class="aj-dot" data-theme="' + i + '" title="' + t.n + '" style="background:' + t.a + '"></button>';
       }).join('') + '</div>';
-    wrap.addEventListener('click', function (ev) { var d = ev.target.closest('[data-theme]'); if (d) applyTheme(Number(d.getAttribute('data-theme'))); });
+    wrap.addEventListener('click', function (ev) {
+      var d = ev.target.closest('[data-theme]'); if (d) { applyTheme(Number(d.getAttribute('data-theme'))); return; }
+      var m = ev.target.closest('[data-mode]'); if (m) setMode(m.getAttribute('data-mode'));
+    });
     nav.insertBefore(wrap, nav.firstChild);
     if (window._instIsInstalled && window._instIsInstalled()) $('aj-install').style.display = 'none';
-    var ti = 0; try { ti = Number(localStorage.getItem('gp_theme_idx')) || 0; } catch (x) {} applyTheme(ti);
+    applyPalette();
   }
 
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
@@ -274,6 +348,7 @@
   /* ── Branchement sur la navigation existante ──────────────────────── */
   function hook() {
     addSidebarButtons();
+    addModeButton();
     if (typeof window.showPage === 'function' && !window.showPage._ajWrapped) {
       var orig = window.showPage;
       window.showPage = function (name) {
