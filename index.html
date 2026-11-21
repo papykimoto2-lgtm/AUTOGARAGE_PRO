@@ -557,6 +557,30 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
 </style>
 
 
+<style id="responsive-fixes">
+/* Correctifs affichage tablette / mobile */
+@media (max-width: 959px) {
+  .page-header, .page-actions, .filter-bar { flex-wrap: wrap; }
+  .page-actions .btn, .page-actions .btn-whatsapp { white-space: nowrap; }
+}
+@media (max-width: 959px) {
+  div[style*="grid-template-columns:1fr 1fr;gap:20px"]:not([style*="margin-top:4px"]) { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 599px) {
+  div[style*="grid-template-columns:1fr 1fr;gap:20px"],
+  #page-rapports div[style*="repeat(3,1fr)"] { grid-template-columns: minmax(0,1fr) !important; }
+  div[style*="grid-template-columns:1fr 1fr;gap:20px"] > * { min-width: 0; }
+  .usr-card { flex-wrap: wrap; }
+  .filter-bar { padding: 10px 12px; gap: 8px; }
+  .filter-bar .filter-sep { display: none; }
+  .filter-bar select, .filter-bar input { max-width: 100%; min-width: 0; }
+  .toast-container { left: 10px; right: 10px; bottom: 72px; }
+  .toast-container > * { max-width: 100%; }
+}
+@media (hover: none) and (pointer: coarse) {
+  .btn-icon { min-width: 36px; min-height: 36px; }
+}
+</style>
 </head>
 <body>
 
@@ -6729,7 +6753,7 @@ function _schedRender(key, fn, delay) {
   if (_renderQueue[key]) { clearTimeout(_renderQueue[key]); }
   _renderQueue[key] = setTimeout(function() {
     delete _renderQueue[key];
-    requestAnimationFrame(fn);
+    requestAnimationFrame(function() { fn(); });
   }, delay);
 }
 
