@@ -22790,7 +22790,58 @@ window.printFicheVie = window.exportFichePDF;
   window._doLoginSHA256 = function() { window.doLogin(); };
   window._usrSaveSHA256 = function() { window.usrSave(); };
 
+  /* ── Anti brute-force : verrouillage progressif après 5 échecs ── */
+  var _LF_KEY = 'gp_login_fail';
+  function _lfGet() { try { return JSON.parse(localStorage.getItem(_LF_KEY)) || {n:0,until:0}; } catch(e) { return {n:0,until:0}; } }
+  function _lfSet(o) { try { localStorage.setItem(_LF_KEY, JSON.stringify(o)); } catch(e) {} }
+  function _lfShow(msg) {
+    var el = document.getElementById('login-error');
+    if (el) { el.textContent = msg; el.style.display = ''; }
+    if (typeof toast === 'function') toast(msg.replace(/^❌ /, ''), 'error');
+  }
+  function _lfFail() {
+    var s = _lfGet(); s.n++;
+    if (s.n >= 5) { s.until = Date.now() + Math.min(30 * 60000, 30000 * Math.pow(2, s.n - 5)); }
+    _lfSet(s);
+  }
+
+  /* ── Changement obligatoire des mots de passe par défaut ── */
+  var _DEFAULT_PWDS = ['admin123', 'chef123', 'meca123', 'caisse123'];
+  function _forcePwdChange(user, onDone) {
+    var old = document.getElementById('force-pwd-modal'); if (old) old.remove();
+    var m = document.createElement('div');
+    m.id = 'force-pwd-modal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;display:flex;align-items:center;justify-content:center';
+    m.innerHTML = '<div style="background:#0e1528;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:24px;width:380px;max-width:92vw;color:#f0f4ff">'
+      + '<strong style="font-size:15px">🔐 Changement de mot de passe obligatoire</strong>'
+      + '<p style="font-size:12px;color:#8899bb;margin:10px 0 14px">Ce compte utilise un mot de passe par défaut. Choisissez-en un nouveau (8 caractères minimum).</p>'
+      + '<input id="fp-new" type="password" class="login-input" placeholder="Nouveau mot de passe" autocomplete="new-password" style="margin-bottom:8px">'
+      + '<input id="fp-new2" type="password" class="login-input" placeholder="Confirmer" autocomplete="new-password">'
+      + '<div id="fp-err" style="color:#ef4444;font-size:12px;margin-top:8px;min-height:14px"></div>'
+      + '<button id="fp-ok" class="login-btn" style="margin-top:10px;width:100%">Enregistrer et continuer</button></div>';
+    document.body.appendChild(m);
+    document.getElementById('fp-ok').onclick = function() {
+      var a = document.getElementById('fp-new').value, b = document.getElementById('fp-new2').value;
+      var err = document.getElementById('fp-err');
+      if (a.length < 8) { err.textContent = 'Minimum 8 caractères'; return; }
+      if (a !== b) { err.textContent = 'Les mots de passe ne correspondent pas'; return; }
+      if (_DEFAULT_PWDS.indexOf(a) >= 0) { err.textContent = 'Choisissez un mot de passe différent de celui par défaut'; return; }
+      window._pwdHash(a).then(function(hash) {
+        var users = _usrLoad();
+        var u = users.find(function(x) { return x.id === user.id; });
+        if (u) { u.pwd = hash; _usrSave(users); }
+        m.remove();
+        onDone(a);
+      });
+    };
+  }
+
   window.doLogin = function() {
+    var _lf = _lfGet();
+    if (_lf.until > Date.now()) {
+      _lfShow('❌ Trop de tentatives. Réessayez dans ' + Math.ceil((_lf.until - Date.now()) / 1000) + ' s');
+      return;
+    }
     var loginVal = (document.getElementById('login-user').value || '').trim();
     var pwdVal   = document.getElementById('login-pass').value || '';
 
@@ -22804,6 +22855,7 @@ window.printFicheVie = window.exportFichePDF;
     var user  = users.find(function(u) { return u.login === loginVal; });
 
     if (!user) {
+      _lfFail();
       var errEl2 = document.getElementById('login-error');
       if (errEl2) { errEl2.textContent = '❌ Identifiant ou mot de passe incorrect'; errEl2.style.display = ''; }
       if (typeof toast === 'function') toast('Identifiant ou mot de passe incorrect', 'error');
@@ -22813,6 +22865,7 @@ window.printFicheVie = window.exportFichePDF;
     // Vérification async SHA-256 (ou legacy btoa)
     window._pwdVerify(pwdVal, user.pwd).then(function(ok) {
       if (!ok) {
+        _lfFail();
         var errEl3 = document.getElementById('login-error');
         if (errEl3) { errEl3.textContent = '❌ Identifiant ou mot de passe incorrect'; errEl3.style.display = ''; }
         if (typeof toast === 'function') toast('Identifiant ou mot de passe incorrect', 'error');
@@ -22820,6 +22873,16 @@ window.printFicheVie = window.exportFichePDF;
       }
       if (user.status === 'inactif') {
         if (typeof toast === 'function') toast("Ce compte est désactivé. Contactez l'administrateur.", 'error');
+        return;
+      }
+
+      _lfSet({n:0,until:0});
+
+      if (_DEFAULT_PWDS.indexOf(pwdVal) >= 0) {
+        _forcePwdChange(user, function(newPwd) {
+          document.getElementById('login-pass').value = newPwd;
+          window.doLogin();
+        });
         return;
       }
 
@@ -22869,7 +22932,7 @@ window.printFicheVie = window.exportFichePDF;
     if (!login)  { if (typeof toast==='function') toast('Identifiant obligatoire', 'error'); return; }
     if (!name)   { if (typeof toast==='function') toast('Nom complet obligatoire', 'error'); return; }
     if (pwd && pwd !== pwd2) { if (typeof toast==='function') toast('Les mots de passe ne correspondent pas', 'error'); return; }
-    if (pwd && pwd.length < 4) { if (typeof toast==='function') toast('Mot de passe trop court (4 car. min.)', 'error'); return; }
+    if (pwd && pwd.length < 8) { if (typeof toast==='function') toast('Mot de passe trop court (8 car. min.)', 'error'); return; }
 
     var pages = null;
     if (role === 'custom') {
@@ -22927,9 +22990,7 @@ window.printFicheVie = window.exportFichePDF;
   ──────────────────────────────────────────────────────────────────────── */
 
   // Mots de passe par défaut (production)
-  var _DEMO_PWDS = {
-    'admin': 'admin123'
-  };
+  var _DEMO_PWDS = {}; // ne jamais réinjecter de mot de passe connu
 
   document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
