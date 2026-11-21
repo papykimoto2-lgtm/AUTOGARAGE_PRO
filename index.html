@@ -7104,13 +7104,7 @@ function renderKanban() {
 // ─── OUTILLAGE ────────────────────────────────────────────
 var DB_OUTILLAGE = [];
 
-var DB_OUTILLAGE_PRETS = [
-  {id:'PR-001', date:'2025-05-10', outilId:'OUT-002', outilNom:'Valise diagnostic OBD2', type:'sortie', technicien:'Kouamé BROU', or:'OR-2025-047', note:'Diagnostic electronique Toyota'},
-  {id:'PR-002', date:'2025-05-08', outilId:'OUT-005', outilNom:'Pistolet à impact pneumatique', type:'sortie', technicien:'Moussa TRAORE', or:'OR-2025-043', note:''},
-  {id:'PR-003', date:'2025-05-08', outilId:'OUT-005', outilNom:'Pistolet à impact pneumatique', type:'retour', technicien:'Moussa TRAORE', or:'OR-2025-043', note:'Bon état'},
-  {id:'PR-004', date:'2025-05-06', outilId:'OUT-001', outilNom:'Clé dynamométrique 1/2 pouce', type:'sortie', technicien:'Ibrahim DIALLO', or:'OR-2025-041', note:''},
-  {id:'PR-005', date:'2025-05-07', outilId:'OUT-001', outilNom:'Clé dynamométrique 1/2 pouce', type:'retour', technicien:'Ibrahim DIALLO', or:'OR-2025-041', note:'Vérifier étalonnage'}
-];
+var DB_OUTILLAGE_PRETS = []; /* données de démonstration retirées */
 
 var _outilCounter = 7;
 var _pretCounter = 5;
@@ -9201,36 +9195,7 @@ const DB_DEPENSES = [];
 
 const DB_FOURNISSEURS = [];
 
-const DB_COMMANDES = [
-  {id:'CMD-018', fournisseur_id:'F001', date:'2025-04-27', dateLivr:'2025-04-29', montant:142000, statut:'livree',
-   articles:'Plaquettes x10, filtres x20',
-   lignes:[
-     {pieceId:4, nom:'Plaquettes frein av. (jeu)', ref:'FRN-002', qty:10, pu:12000},
-     {pieceId:1, nom:'Filtre à huile moteur',      ref:'FLT-001', qty:20, pu:5000},
-   ]},
-  {id:'CMD-019', fournisseur_id:'F003', date:'2025-04-28', dateLivr:'2025-04-28', montant:280000, statut:'en_cours',
-   articles:'Huile 5W30 x20, filtre huile x15',
-   lignes:[
-     {pieceId:5, nom:'Huile moteur 5W30 (5L)',  ref:'MOT-001', qty:20, pu:14000},
-     {pieceId:1, nom:'Filtre à huile moteur',   ref:'FLT-001', qty:15, pu:5000},
-   ]},
-  {id:'CMD-020', fournisseur_id:'F002', date:'2025-04-28', dateLivr:'2025-04-30', montant:95000, statut:'en_cours',
-   articles:'Disques frein x4, rotules x2',
-   lignes:[
-     {pieceId:3, nom:'Disques frein avant Toyota', ref:'FRN-001', qty:4, pu:18000},
-     {pieceId:null, nom:'Rotules de direction',    ref:'—',       qty:2, pu:9500},
-   ]},
-  {id:'CMD-021', fournisseur_id:'F004', date:'2025-04-25', dateLivr:'2025-04-27', montant:210000, statut:'livree',
-   articles:'Batteries 60Ah x3',
-   lignes:[
-     {pieceId:7, nom:'Batterie 60Ah', ref:'ELC-001', qty:3, pu:45000},
-   ]},
-  {id:'CMD-022', fournisseur_id:'F005', date:'2025-04-26', dateLivr:'2025-05-02', montant:185000, statut:'en_attente',
-   articles:'Pneus 185/65R15 x4',
-   lignes:[
-     {pieceId:null, nom:'Pneus 185/65R15', ref:'PNE-001', qty:4, pu:46250},
-   ]},
-];
+const DB_COMMANDES = []; /* données de démonstration retirées */
 
 // ═══════════════════════════════════════════════════════════
 // CATALOGUE PRIX MULTI-FOURNISSEURS
@@ -13241,23 +13206,11 @@ document.addEventListener('click', e => {
 // DÉPÔTS — DATA & LOGIQUE
 // ═══════════════════════════════════════════════════════════
 const DB_DEPOTS = [
-  {id:'dep-1', nom:'Dépôt Principal',    type:'principal', responsable:'Moussa TRAORE',  localisation:'Zone industrielle, Yopougon', actif:true},
-  {id:'dep-2', nom:'Comptoir Atelier',   type:'atelier',   responsable:'Kouamé ASSI',    localisation:'Atelier central',             actif:true},
-  {id:'dep-3', nom:'Comptoir Réception', type:'comptoir',  responsable:'Awa COULIBALY',  localisation:'Hall d\'accueil',             actif:true},
+  {id:'dep-1', nom:'Dépôt Principal', type:'principal', responsable:'', localisation:'', actif:true}
 ];
 
 // Stock par dépôt : {depotId, pieceId, qty}
-const DB_STOCK_DEPOTS = [
-  {depotId:'dep-1', pieceId:1, qty:2},  {depotId:'dep-1', pieceId:2, qty:5},
-  {depotId:'dep-1', pieceId:3, qty:4},  {depotId:'dep-1', pieceId:4, qty:1},
-  {depotId:'dep-1', pieceId:5, qty:10}, {depotId:'dep-1', pieceId:6, qty:7},
-  {depotId:'dep-1', pieceId:7, qty:2},  {depotId:'dep-1', pieceId:8, qty:1},
-  {depotId:'dep-2', pieceId:1, qty:0},  {depotId:'dep-2', pieceId:2, qty:3},
-  {depotId:'dep-2', pieceId:3, qty:2},  {depotId:'dep-2', pieceId:5, qty:5},
-  {depotId:'dep-2', pieceId:7, qty:1},  {depotId:'dep-2', pieceId:8, qty:1},
-  {depotId:'dep-3', pieceId:2, qty:0},  {depotId:'dep-3', pieceId:4, qty:0},
-  {depotId:'dep-3', pieceId:6, qty:3},
-];
+const DB_STOCK_DEPOTS = []; /* données de démonstration retirées */
 
 const DB_TRANSFERTS = [];
 
