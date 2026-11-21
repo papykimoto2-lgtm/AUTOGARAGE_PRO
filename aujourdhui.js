@@ -44,6 +44,15 @@
       }
     });
 
+    arr(db.interventions).forEach(function (o) {
+      if (o.statut !== 'Terminé') return;
+      var billed = arr(db.factures).some(function (f) { return f.or_id === o.id; });
+      if (billed) return;
+      out.push({ id: 'or-bill-' + o.id, level: 'amber', page: 'factures', fact: o.id,
+        title: (o.id || 'OR') + ' · ' + (o.client || 'Client'), sub: (o.plaque || '') + ' ' + (o.marque || ''),
+        msg: 'Travaux terminés, aucune facture émise' + (o.montant ? ' (' + fmt(o.montant) + ' FCFA)' : '') });
+    });
+
     arr(db.factures).forEach(function (f) {
       var st = String(f.statut || '');
       if (st !== 'En attente' && st !== 'Partiel') return;
@@ -126,7 +135,8 @@
         html += '<div class="aj-card aj-' + a.level + '"><div class="aj-card-main"><div class="aj-card-title">' + e(a.title) +
           (a.sub ? ' <span class="aj-card-sub">' + e(a.sub) + '</span>' : '') + '</div><div class="aj-card-msg">' + e(a.msg) + '</div></div>' +
           '<div class="aj-card-actions">' +
-          '<button class="btn btn-primary btn-sm" data-aj-page="' + e(a.page) + '">Ouvrir</button>' +
+          (a.fact ? '<button class="btn btn-primary btn-sm" data-aj-fact="' + e(a.fact) + '">🧾 Facturer</button>'
+            : '<button class="btn btn-primary btn-sm" data-aj-page="' + e(a.page) + '">Ouvrir</button>') +
           '<button class="btn btn-secondary btn-sm" data-aj-snooze="' + e(a.id) + '" data-h="2">⏰ 2 h</button>' +
           '<button class="btn btn-secondary btn-sm" data-aj-snooze="' + e(a.id) + '" data-h="24">⏰ Demain</button>' +
           '</div></div>';
@@ -138,11 +148,40 @@
   }
 
   document.addEventListener('click', function (ev) {
-    var b = ev.target.closest && ev.target.closest('[data-aj-page],[data-aj-snooze]');
+    var b = ev.target.closest && ev.target.closest('[data-aj-page],[data-aj-snooze],[data-aj-fact]');
     if (!b) return;
-    if (b.hasAttribute('data-aj-page')) { showPage(b.getAttribute('data-aj-page')); }
+    if (b.hasAttribute('data-aj-fact')) { billOR(b.getAttribute('data-aj-fact')); }
+    else if (b.hasAttribute('data-aj-page')) { showPage(b.getAttribute('data-aj-page')); }
     else { snooze(b.getAttribute('data-aj-snooze'), Number(b.getAttribute('data-h')) || 2); }
   });
+
+  /* ── Facturer un OR terminé : ouvre la facture pré-remplie ─────────── */
+  function billOR(orId) {
+    showPage('factures');
+    if (typeof openNewFactureModal !== 'function') return;
+    openNewFactureModal();
+    var sel = $('f-or');
+    if (sel) { sel.value = orId; if (typeof onORSelected === 'function') onORSelected(orId); }
+  }
+
+  /* ── Couleur du thème (comme Angel's) ──────────────────────────────── */
+  var THEMES = [
+    { n: 'Orange', a: '#f97316', b: '#fb923c', g: 'rgba(249,115,22,0.3)' },
+    { n: 'Bleu', a: '#3b82f6', b: '#60a5fa', g: 'rgba(59,130,246,0.3)' },
+    { n: 'Vert', a: '#22c55e', b: '#4ade80', g: 'rgba(34,197,94,0.3)' },
+    { n: 'Violet', a: '#a855f7', b: '#c084fc', g: 'rgba(168,85,247,0.3)' },
+    { n: 'Rouge', a: '#ef4444', b: '#f87171', g: 'rgba(239,68,68,0.3)' },
+    { n: 'Turquoise', a: '#14b8a6', b: '#2dd4bf', g: 'rgba(20,184,166,0.3)' }
+  ];
+  function applyTheme(i) {
+    var t = THEMES[i] || THEMES[0], r = document.documentElement.style;
+    r.setProperty('--accent', t.a); r.setProperty('--accent2', t.b); r.setProperty('--accent-glow', t.g);
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', '#0a0f1e');
+    try { localStorage.setItem('gp_theme_idx', String(i)); } catch (x) {}
+    var dots = document.querySelectorAll('.aj-dot');
+    for (var k = 0; k < dots.length; k++) dots[k].classList.toggle('on', k === i);
+  }
+  (function () { var i = 0; try { i = Number(localStorage.getItem('gp_theme_idx')) || 0; } catch (x) {} if (i) applyTheme(i); })();
 
   /* ── Recherche globale (touche « / » ou Ctrl+K) ───────────────────── */
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
@@ -212,7 +251,11 @@
     var wrap = document.createElement('div');
     wrap.id = 'aj-side';
     wrap.innerHTML = '<button class="aj-side-btn" onclick="_ajOpenSearch()">🔍 Rechercher <kbd>/</kbd></button>' +
-      '<button class="aj-side-btn" id="aj-install" style="display:none">📲 Installer l\'application</button>';
+      '<button class="aj-side-btn" id="aj-install" style="display:none">📲 Installer l\'application</button>' +
+      '<div class="aj-dots" aria-label="Couleur du thème">' + THEMES.map(function (t, i) {
+        return '<button class="aj-dot" data-theme="' + i + '" title="' + t.n + '" style="background:' + t.a + '"></button>';
+      }).join('') + '</div>';
+    wrap.addEventListener('click', function (ev) { var d = ev.target.closest('[data-theme]'); if (d) applyTheme(Number(d.getAttribute('data-theme'))); });
     nav.insertBefore(wrap, nav.firstChild);
     $('aj-install').addEventListener('click', function () {
       if (!deferredPrompt) return;
@@ -220,6 +263,7 @@
       deferredPrompt.userChoice.then(function () { deferredPrompt = null; $('aj-install').style.display = 'none'; });
     });
     if (deferredPrompt) $('aj-install').style.display = '';
+    var ti = 0; try { ti = Number(localStorage.getItem('gp_theme_idx')) || 0; } catch (x) {} applyTheme(ti);
   }
 
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
