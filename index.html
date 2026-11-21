@@ -6664,7 +6664,7 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
      JAVASCRIPT
 ════════════════════════════════════════════════════════ -->
 <script>/* Supabase chargé en async — n'est pas requis pour le fonctionnement offline */</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onerror="console.warn('[Sync] SDK Supabase indisponible')"></script>
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onload="try{if(typeof _syncInit==='function')_syncInit();}catch(e){}" onerror="console.warn('[Sync] SDK Supabase indisponible')"></script>
 <script>
 const DB = {
   clients:       [],
@@ -20519,7 +20519,7 @@ if (document.readyState === 'loading') {
 </script>
 
 <!-- QR Code library (embarquée offline via CDN cdnjs) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" async></script>
 
 <!-- ═══════════════════════════════════════════════════════
      SFSELECTSYNC — Synchronisation centralisée des selects
