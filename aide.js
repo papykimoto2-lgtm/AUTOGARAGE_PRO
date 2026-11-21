@@ -35,7 +35,7 @@
     ]},
     { id: 'tips', title: '💡 Astuces', items: [
       ['Hors ligne', 'L\'application continue de fonctionner sans connexion. La pastille « Synchronisé / Hors ligne » en haut indique l\'état ; les modifications sont envoyées au retour du réseau.'],
-      ['Installer l\'application', 'Bouton « 📲 Installer l\'application » dans le menu (quand votre navigateur le propose) : icône sur l\'écran d\'accueil, ouverture plein écran.'],
+      ['Installer l\'application', 'Sur <b>téléphone</b>, <b>tablette</b> et <b>ordinateur</b> : bouton « 📲 Installer l\'application » dans le menu et sur l\'écran de connexion. Avec Chrome, Edge ou Samsung Internet, l\'installation se fait en un clic ; sur iPhone / iPad (Partager → Sur l\'écran d\'accueil) ou Mac, un mode d\'emploi adapté à votre appareil s\'affiche. <a href="#" onclick="document.getElementById(\'aide-modal\').remove();window._instOpen&&window._instOpen();return false">Ouvrir le guide d\'installation</a>'],
       ['Couleur du thème', 'Les pastilles de couleur du menu changent l\'accent et les fonds ; le choix est mémorisé sur l\'appareil.'],
       ['Mobile et tablette', 'Menu ☰ en haut à gauche ou balayage depuis le bord gauche ; barre de navigation rapide en bas du téléphone.']
     ]},

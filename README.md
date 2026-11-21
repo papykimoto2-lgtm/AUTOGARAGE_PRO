@@ -22,6 +22,20 @@ Développé par **SANIX AFRICA — Division Technologies** · 📞 +225 07 79 18
 
 Aides intégrées : recherche globale (`/` ou `Ctrl+K`), **aide** (`?` ou `F1`), couleur du thème, installation comme application (PWA).
 
+## Installer l'application (téléphone, tablette, ordinateur)
+
+Bouton **« 📲 Installer l'application »** sur l'écran de connexion et dans le menu.
+
+| Appareil | Comment |
+|---|---|
+| **Android** (Chrome) | Installation en un clic, ou menu ⋮ → *Installer l'application* |
+| **PC / Mac** (Chrome, Edge) | Installation en un clic, ou icône d'installation dans la barre d'adresse |
+| **iPhone / iPad** | *Partager* → *Sur l'écran d'accueil* (iOS ne propose pas l'installation en un clic) |
+| **Mac** (Safari 17+) | *Fichier* → *Ajouter au Dock* |
+| **Firefox (ordinateur)** | Non pris en charge : utiliser Chrome ou Edge |
+
+Prérequis : site servi en **HTTPS** (Vercel le fait). L'application installée s'ouvre en plein écran, fonctionne hors ligne et se met à jour à chaque connexion.
+
 ## Rôles
 
 | Rôle | Accès |
@@ -50,7 +64,8 @@ Application web **statique**, sans étape de compilation.
 | `cloud.js` | Connexion Supabase Auth, profil et rôle, jeton, première synchronisation, mode démonstration |
 | `aide.js` / `aide.css` | Aide intégrée et bandeau de démonstration |
 | `demo.html` | Page de démonstration (données fictives, sauvegarde puis restauration du poste) |
-| `sw.js`, `manifest.webmanifest`, `icon.svg` | Fonctionnement hors ligne et installation (PWA) |
+| `install.js` / `install.css` | Installation de l'application : un clic (Chrome, Edge, Samsung Internet) ou mode d'emploi par appareil (iPhone/iPad, Mac, Firefox) |
+| `sw.js`, `manifest.webmanifest`, `icon*.png`, `apple-touch-icon.png`, `icon.svg` | Fonctionnement hors ligne, installation (PWA) et icônes |
 
 ### Base de données (Supabase)
 

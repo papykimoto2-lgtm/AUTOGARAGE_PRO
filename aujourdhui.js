@@ -249,13 +249,7 @@
     }
   });
 
-  /* ── Installation sur téléphone / ordinateur (PWA) ─────────────────── */
-  var deferredPrompt = null;
-  window.addEventListener('beforeinstallprompt', function (ev) {
-    ev.preventDefault(); deferredPrompt = ev;
-    var b = $('aj-install'); if (b) b.style.display = '';
-  });
-  window.addEventListener('appinstalled', function () { var b = $('aj-install'); if (b) b.style.display = 'none'; deferredPrompt = null; });
+  /* L'installation (PWA) est gérée par install.js ; ici seulement le bouton du menu. */
 
   function addSidebarButtons() {
     var nav = document.querySelector('.sidebar-nav-wrap');
@@ -263,18 +257,13 @@
     var wrap = document.createElement('div');
     wrap.id = 'aj-side';
     wrap.innerHTML = '<button class="aj-side-btn" onclick="_ajOpenSearch()">🔍 Rechercher <kbd>/</kbd></button>' +
-      '<button class="aj-side-btn" id="aj-install" style="display:none">📲 Installer l\'application</button>' +
+      '<button class="aj-side-btn" id="aj-install" onclick="window._instOpen && window._instOpen()">📲 Installer l\'application</button>' +
       '<div class="aj-dots" aria-label="Couleur du thème">' + THEMES.map(function (t, i) {
         return '<button class="aj-dot" data-theme="' + i + '" title="' + t.n + '" style="background:' + t.a + '"></button>';
       }).join('') + '</div>';
     wrap.addEventListener('click', function (ev) { var d = ev.target.closest('[data-theme]'); if (d) applyTheme(Number(d.getAttribute('data-theme'))); });
     nav.insertBefore(wrap, nav.firstChild);
-    $('aj-install').addEventListener('click', function () {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function () { deferredPrompt = null; $('aj-install').style.display = 'none'; });
-    });
-    if (deferredPrompt) $('aj-install').style.display = '';
+    if (window._instIsInstalled && window._instIsInstalled()) $('aj-install').style.display = 'none';
     var ti = 0; try { ti = Number(localStorage.getItem('gp_theme_idx')) || 0; } catch (x) {} applyTheme(ti);
   }
 
