@@ -54,8 +54,17 @@
   }
 
   /* ── Session cloud ────────────────────────────────────────────────────── */
-  function load() { try { return JSON.parse(localStorage.getItem(LS_SESSION)); } catch (x) { return null; } }
-  function save(s) { try { if (s) localStorage.setItem(LS_SESSION, JSON.stringify(s)); else localStorage.removeItem(LS_SESSION); } catch (x) {} }
+  /* « Se souvenir de moi » coché : session durable (localStorage). Sinon : sessionStorage, effacée à la fermeture du navigateur. */
+  function load() {
+    try { var a = sessionStorage.getItem(LS_SESSION); if (a) return JSON.parse(a); } catch (x) {}
+    try { return JSON.parse(localStorage.getItem(LS_SESSION)); } catch (x) { return null; }
+  }
+  function save(s) {
+    try { localStorage.removeItem(LS_SESSION); } catch (x) {}
+    try { sessionStorage.removeItem(LS_SESSION); } catch (x) {}
+    if (!s) return;
+    try { (s.remember ? localStorage : sessionStorage).setItem(LS_SESSION, JSON.stringify(s)); } catch (x) {}
+  }
 
   if (!DEMO) window._cloudToken = function () { var s = load(); return s && s.access_token ? s.access_token : null; };
 
@@ -84,7 +93,7 @@
   }
 
   /* ── Connexion par e-mail ─────────────────────────────────────────────── */
-  function cloudLogin(email, password) {
+  function cloudLogin(email, password, remember) {
     var c = conn();
     var btn = document.querySelector('#login-screen button[onclick*="doLogin"], #login-screen .login-btn');
     if (btn) { btn.disabled = true; btn.setAttribute('data-txt', btn.textContent); btn.textContent = 'Connexion…'; }
@@ -94,12 +103,13 @@
       JSON.stringify({ email: email, password: password }))
       .then(function (d) {
         var s = { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() + (d.expires_in || 3600) * 1000,
-                  user: { id: d.user && d.user.id, email: d.user && d.user.email } };
+                  user: { id: d.user && d.user.id, email: d.user && d.user.email }, remember: !!remember };
         save(s);
         return xhr('GET', c.url + '/rest/v1/profiles?id=eq.' + encodeURIComponent(s.user.id) + '&select=login,nom,role,pages,statut',
           { apikey: c.key, Authorization: 'Bearer ' + s.access_token, Accept: 'application/json' }).then(function (rows) {
           var p = rows && rows[0];
           if (!p || p.statut !== 'actif') { save(null); throw Object.assign(new Error('forbidden'), { forbidden: true }); }
+          s.profile = p; save(s);          /* profil conservé pour la reconnexion automatique (même hors ligne) */
           return { s: s, p: p };
         });
       })
@@ -199,6 +209,100 @@
     setTimeout(function () { location.reload(); }, 1800);
   };
 
+  /* ── Écran de connexion : afficher le mot de passe, se souvenir de moi ─── */
+  var RK = 'gp_remember', RID = 'gp_remember_id';
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (x) { return null; } }
+  function isRemember() { var c = $('login-remember'); return c ? c.checked : lsGet(RK) === '1'; }
+  function rememberId(id) {
+    try {
+      if (isRemember()) { localStorage.setItem(RK, '1'); localStorage.setItem(RID, id); }
+      else { localStorage.removeItem(RK); localStorage.removeItem(RID); }
+    } catch (x) {}
+  }
+
+  function setupLoginUI() {
+    var pw = $('login-pass'), user = $('login-user');
+    if (!pw || !user || $('login-eye')) return;
+
+    /* champ mot de passe + bouton œil */
+    var w = document.createElement('div');
+    w.className = 'login-pw';
+    pw.parentNode.insertBefore(w, pw);
+    w.appendChild(pw);
+    var eye = document.createElement('button');
+    eye.type = 'button'; eye.id = 'login-eye';
+    eye.setAttribute('aria-label', 'Afficher le mot de passe'); eye.setAttribute('aria-pressed', 'false'); eye.title = 'Afficher le mot de passe';
+    eye.textContent = '👁';
+    eye.addEventListener('click', function () {
+      var show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      eye.textContent = show ? '🙈' : '👁';
+      eye.setAttribute('aria-pressed', show ? 'true' : 'false');
+      var lab = show ? 'Masquer le mot de passe' : 'Afficher le mot de passe';
+      eye.setAttribute('aria-label', lab); eye.title = lab;
+      pw.focus();
+    });
+    w.appendChild(eye);
+
+    /* se souvenir de moi */
+    var row = document.createElement('div');
+    row.className = 'login-remember';
+    row.innerHTML = '<label><input type="checkbox" id="login-remember"> <span>Se souvenir de moi</span></label>' +
+                    '<div class="login-remember-hint">Garde votre session ouverte sur cet appareil. À cocher uniquement sur un appareil personnel.</div>';
+    w.insertAdjacentElement('afterend', row);
+
+    /* identifiant mémorisé */
+    if (lsGet(RK) === '1') {
+      $('login-remember').checked = true;
+      var id = lsGet(RID);
+      if (id && !user.value) { user.value = id; }
+      if (id) { try { pw.focus(); } catch (x) {} }
+    }
+
+    /* un mot de passe masqué après une erreur ou une déconnexion */
+    pw.type = 'password';
+  }
+
+  /* ── Reconnexion automatique (session mémorisée) ──────────────────────── */
+  function resumeStatus(txt) {
+    var t = $('login-resume');
+    if (!txt) { if (t) t.remove(); return; }
+    if (!t) {
+      t = document.createElement('div'); t.id = 'login-resume'; t.setAttribute('role', 'status');
+      var box = document.querySelector('#login-screen .login-box'); if (!box) return;
+      var tag = box.querySelector('.login-tagline'); if (tag) tag.insertAdjacentElement('afterend', t); else box.insertBefore(t, box.firstChild);
+    }
+    t.textContent = txt;
+  }
+
+  function autoResume() {
+    if (DEMO) return;
+    var s = load();
+    if (!s || !s.remember || !s.profile || !s.refresh_token) return;
+    var app = $('app'); if (app && app.classList.contains('show')) return;
+    resumeStatus('🔐 Reconnexion automatique…');
+    function go(p, offline) {
+      resumeStatus('');
+      openSession(s, p);
+      if (offline) toastMsg('Hors ligne : session locale rouverte, synchronisation à la reconnexion', 'info');
+    }
+    if (navigator.onLine === false) { go(s.profile, true); return; }
+    var c = conn();
+    window._cloudRefresh().then(function () {
+      var cur = load();
+      return xhr('GET', c.url + '/rest/v1/profiles?id=eq.' + encodeURIComponent(s.user.id) + '&select=login,nom,role,pages,statut',
+        { apikey: c.key, Authorization: 'Bearer ' + (cur && cur.access_token), Accept: 'application/json' });
+    }).then(function (rows) {
+      var p = rows && rows[0];
+      if (!p || p.statut !== 'actif') { save(null); resumeStatus(''); showLoginError('Compte désactivé ou introuvable. Reconnectez-vous.'); return; }
+      var cur = load() || s; cur.profile = p; save(cur);
+      go(p, false);
+    }).catch(function (e) {
+      if (e && e.network) { go(s.profile, true); return; }       /* pas de réseau : on garde la session locale */
+      save(null); resumeStatus('');                                /* session révoquée ou expirée : retour à l'écran de connexion */
+    });
+  }
+
   /* ── Branchement sur la connexion / déconnexion existantes ────────────── */
   function hook() {
     if (typeof window.doLogin === 'function' && !window.doLogin._cloud) {
@@ -209,9 +313,11 @@
         if (u.indexOf('@') !== -1) {
           if (DEMO) { showLoginError('Démonstration en cours : connexion cloud désactivée. Utilisez « demo » ou quittez la démonstration (demo.html).'); return; }
           if (!pw) { showLoginError('Identifiant et mot de passe obligatoires'); return; }
-          cloudLogin(u.toLowerCase(), pw);
+          rememberId(u.toLowerCase());
+          cloudLogin(u.toLowerCase(), pw, isRemember());
           return;
         }
+        rememberId(u);
         return origLogin.apply(this, arguments);
       };
       window.doLogin._cloud = true;
@@ -226,6 +332,7 @@
       };
       window.doLogout._cloud = true;
     }
+    setupLoginUI();
     var f = $('login-user');
     if (f) { f.placeholder = 'E-mail ou identifiant'; f.setAttribute('autocomplete', 'username'); }
     var lab = f && f.previousElementSibling;
@@ -233,5 +340,5 @@
   }
 
   /* Le patch de connexion est défini par des scripts en ligne : on se branche après leur chargement */
-  document.addEventListener('DOMContentLoaded', function () { hook(); setTimeout(hook, 1500); });
+  document.addEventListener('DOMContentLoaded', function () { hook(); setTimeout(hook, 1500); setTimeout(autoResume, 1000); });
 })();
