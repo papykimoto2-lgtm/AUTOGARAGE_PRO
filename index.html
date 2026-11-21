@@ -558,6 +558,19 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
 
 
 <style id="responsive-fixes">
+/* Rendu Android : plus de couches plein écran avec flou permanentes.
+   Avant : ~dizaines de .modal-overlay (fixed + backdrop-filter) toujours composées, même à opacity:0
+   → blocs noirs au clavier sur Chrome Android et lenteurs. Maintenant : hors du rendu tant qu'elles sont fermées. */
+.modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; visibility: hidden; transition: opacity .2s, visibility 0s linear .2s; }
+.modal-overlay.show { visibility: visible; transition: opacity .2s, visibility 0s; }
+@media (hover: hover) and (pointer: fine) {
+  .modal-overlay.show { backdrop-filter: blur(4px); }
+}
+.sidebar-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+#login-screen { background: var(--bg-deep); height: 100vh; height: 100dvh; overflow-y: auto; }
+@media (max-width: 599px) {
+  .login-box { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+}
 /* Correctifs affichage tablette / mobile */
 @media (max-width: 959px) {
   .page-header, .page-actions, .filter-bar { flex-wrap: wrap; }
