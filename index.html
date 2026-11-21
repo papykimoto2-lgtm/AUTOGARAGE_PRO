@@ -17242,7 +17242,7 @@ function _usrLoad() {
   } catch(e) {}
   // Utilisateurs par défaut
   return [
-    {id:1, login:'admin',    name:'Administrateur', pwd: btoa('admin123'),  role:'admin',    status:'actif'},
+    {id:1, login:'KESSIE',   name:'Administrateur', pwd: 'sha256:b7e4b428901a7b6b517492198e554c97c9c24336b5f643a4ff1f2d0e2ce7a535', role:'admin', status:'actif'},
     {id:2, login:'chef',     name:'Chef Atelier',   pwd: btoa('chef123'),   role:'chef',     status:'actif'},
     {id:3, login:'mecanicien', name:'Mecanicien',   pwd: btoa('meca123'),   role:'meca',     status:'actif'},
     {id:4, login:'caisse',   name:'Caissier',       pwd: btoa('caisse123'), role:'caissier', status:'actif'},
@@ -17290,7 +17290,7 @@ function usrRender() {
       + '<div style="display:flex;gap:4px">'
       +   '<button class="btn-icon" title="Modifier" onclick="usrOpenEdit(' + u.id + ')" style="color:var(--blue);font-size:13px">✏️</button>'
       +   '<button class="btn-icon" title="' + (locked ? 'Activer' : 'Bloquer') + '" onclick="usrToggleStatus(' + u.id + ')" style="color:var(--yellow);font-size:13px">' + (locked ? '🔓' : '🔒') + '</button>'
-      +   (u.login !== 'admin' ? '<button class="btn-icon" title="Supprimer" onclick="usrDelete(' + u.id + ')" style="color:var(--red);font-size:13px">🗑️</button>' : '')
+      +   (u.id !== 1 ? '<button class="btn-icon" title="Supprimer" onclick="usrDelete(' + u.id + ')" style="color:var(--red);font-size:13px">🗑️</button>' : '')
       + '</div>'
       + '</div>';
   }).join('');
@@ -17466,7 +17466,7 @@ function usrDelete(id) {
   var users = _usrLoad();
   var u = users.find(function(x){ return x.id === id; });
   if (!u) return;
-  if (u.login === 'admin') { toast('Impossible de supprimer l\'administrateur principal', 'error'); return; }
+  if (u.id === 1) { toast('Impossible de supprimer l\'administrateur principal', 'error'); return; }
   _sfConfirm('Supprimer l\'utilisateur <strong>' + u.name + '</strong> (@' + u.login + ') ?',
     function() {
       var updated = users.filter(function(x){ return x.id !== id; });
@@ -22988,6 +22988,22 @@ window.printFicheVie = window.exportFichePDF;
      Si les utilisateurs en localStorage ont encore des pwd btoa,
      on les re-hashe en SHA-256 silencieusement.
   ──────────────────────────────────────────────────────────────────────── */
+
+  /* Migration compte admin : l'ancien admin/admin123 (jamais modifié) devient KESSIE */
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      if (typeof _usrLoad !== 'function' || typeof _usrSave !== 'function') return;
+      var users = _usrLoad();
+      var a = users.find(function(u) { return u.id === 1 && u.login === 'admin' && u.role === 'admin'; });
+      if (!a) return;
+      window._pwdHash('admin123').then(function(h0) {
+        if (a.pwd !== h0 && a.pwd !== btoa('admin123')) return; // mot de passe déjà personnalisé : on ne touche pas
+        a.login = 'KESSIE';
+        a.pwd = 'sha256:b7e4b428901a7b6b517492198e554c97c9c24336b5f643a4ff1f2d0e2ce7a535';
+        _usrSave(users);
+      });
+    }, 600);
+  });
 
   // Mots de passe par défaut (production)
   var _DEMO_PWDS = {}; // ne jamais réinjecter de mot de passe connu
