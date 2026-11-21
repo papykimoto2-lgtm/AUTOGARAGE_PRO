@@ -10,6 +10,13 @@
   var NEW_URL = 'https://seppjannzatoduoperxn.supabase.co';
 
   function $(id) { return document.getElementById(id); }
+
+  /* Mode démonstration : aucune donnée ne quitte l'appareil (synchronisation coupée, connexion cloud refusée) */
+  var DEMO = false; try { DEMO = localStorage.getItem('gp_demo') === '1'; } catch (x) {}
+  if (DEMO) {
+    try { Object.defineProperty(navigator, 'onLine', { get: function () { return false; }, configurable: true }); } catch (x) {}
+    window._cloudToken = function () { return null; };
+  }
   function toastMsg(m, t) { if (typeof toast === 'function') toast(m, t || 'info'); }
   function conn() {
     return { url: (window._SUPA_URL || NEW_URL).replace(/\/$/, ''), key: window._SUPA_KEY || '' };
@@ -50,7 +57,7 @@
   function load() { try { return JSON.parse(localStorage.getItem(LS_SESSION)); } catch (x) { return null; } }
   function save(s) { try { if (s) localStorage.setItem(LS_SESSION, JSON.stringify(s)); else localStorage.removeItem(LS_SESSION); } catch (x) {} }
 
-  window._cloudToken = function () { var s = load(); return s && s.access_token ? s.access_token : null; };
+  if (!DEMO) window._cloudToken = function () { var s = load(); return s && s.access_token ? s.access_token : null; };
 
   var refreshing = null;
   window._cloudRefresh = function () {
@@ -200,6 +207,7 @@
         var u = ($('login-user') && $('login-user').value || '').trim();
         var pw = $('login-pass') && $('login-pass').value || '';
         if (u.indexOf('@') !== -1) {
+          if (DEMO) { showLoginError('Démonstration en cours : connexion cloud désactivée. Utilisez « demo » ou quittez la démonstration (demo.html).'); return; }
           if (!pw) { showLoginError('Identifiant et mot de passe obligatoires'); return; }
           cloudLogin(u.toLowerCase(), pw);
           return;
