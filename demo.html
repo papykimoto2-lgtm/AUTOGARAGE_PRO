@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex">
+<title>Démonstration — AutoGarage Pro</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#060b18;--card:#0e1528;--card2:#131b30;--line:rgba(255,255,255,.1);--txt:#f0f4ff;--sub:#8899bb;--acc:#f97316;--yel:#eab308}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+main{max-width:720px;margin:0 auto;padding:22px 16px 48px}
+h1{font-size:22px}h2{font-size:17px;margin-bottom:6px}
+.sub{color:var(--sub);font-size:13px;margin:4px 0 18px}
+.pan{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+ul{padding-left:20px;color:var(--sub);font-size:14px;margin:8px 0}
+li{margin:3px 0}
+.cred{background:var(--card2);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:14px}
+code{background:#0a0f1e;border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:13px}
+button{width:100%;min-height:52px;border:0;border-radius:11px;font:600 16px inherit;cursor:pointer;color:#fff;background:linear-gradient(135deg,#f97316,#f59e0b);margin-top:6px}
+button.sec{background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:14px}
+button:disabled{opacity:.6;cursor:wait}
+.note{font-size:12.5px;color:var(--sub);margin-top:10px}
+#msg{color:var(--yel)}
+.warn{border-color:var(--yel)}
+footer{text-align:center;color:var(--sub);font-size:12px;margin-top:26px}
+footer b{color:var(--txt)}
+</style>
+</head>
+<body>
+<main>
+  <h1>🔧 Auto<span style="color:var(--acc)">Garage</span> Pro — Démonstration</h1>
+  <p class="sub">Essayez le logiciel avec des données d'exemple · aucune donnée réelle</p>
+
+  <div class="pan" id="start">
+    <h2>Bienvenue 👋</h2>
+    <p>Cette démonstration charge des <b>données fictives</b> sur <b>cet appareil seulement</b> : clients, véhicules, interventions, factures, stock et rendez-vous inventés. <b>Rien n'est envoyé au cloud</b>, la synchronisation est coupée, et vous pouvez tout modifier ou effacer.</p>
+    <ul>
+      <li>6 clients (particuliers et entreprises) et 8 véhicules</li>
+      <li>7 interventions à différents stades, dont une en retard et une terminée non facturée</li>
+      <li>4 factures (payée, partielle, impayée), 8 pièces dont une en rupture</li>
+      <li>Rendez-vous, visites techniques et équipe d'atelier</li>
+    </ul>
+    <div class="cred">Connexion :<br>Identifiant <code>demo</code> · mot de passe <code>Demo@Garage2026</code> (administrateur)</div>
+    <button id="go" type="button">▶ Lancer la démonstration</button>
+    <p class="note" id="msg" role="status"></p>
+  </div>
+
+  <div class="pan warn" id="quit">
+    <h2>Quitter la démonstration</h2>
+    <p class="note" style="margin-top:0">Efface les données d'exemple de cet appareil et <b>restaure vos données précédentes</b> si vous en aviez (elles sont sauvegardées avant le lancement). À faire avant tout usage réel.</p>
+    <button class="sec" id="exit" type="button">🧹 Quitter et effacer la démonstration</button>
+    <p class="note" id="msg2" role="status"></p>
+  </div>
+
+  <footer>Développé par <b>SANIX AFRICA</b> · Division Technologies<br>📞 +225 07 79 18 10 75 · ✉️ sanixafrica699@gmail.com</footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var BACKUP = 'gp_demo_backup';
+  var OURS = /^(gp_|sf_)/;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function day(n) { var d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+
+  function sha256(plain) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(plain)).then(function (b) {
+      return 'sha256:' + Array.from(new Uint8Array(b)).map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+    });
+  }
+
+  /* ── Données fictives ───────────────────────────────────────────────── */
+  function build() {
+    var clients = [
+      { id: 1, nom: 'Koffi Démo', tel: '0700000001', wa: '0700000001', email: '', type: 'individuel', ville: 'Abidjan', adresse: 'Cocody', visits: 3, last_visit: day(-2), date_creation: day(-120) },
+      { id: 2, nom: 'Awa Démo', tel: '0700000002', wa: '0700000002', email: '', type: 'individuel', ville: 'Abidjan', adresse: 'Marcory', visits: 2, last_visit: day(-9), date_creation: day(-90) },
+      { id: 3, nom: 'Société Transport Démo', tel: '0700000003', wa: '0700000003', email: 'contact@demo.test', type: 'entreprise', ville: 'Abidjan', adresse: 'Zone 4', visits: 6, last_visit: day(-1), date_creation: day(-200) },
+      { id: 4, nom: 'Moussa Démo', tel: '0700000004', wa: '0700000004', email: '', type: 'individuel', ville: 'Yopougon', adresse: '', visits: 1, last_visit: day(-30), date_creation: day(-60) },
+      { id: 5, nom: 'Pharmacie Démo', tel: '0700000005', wa: '0700000005', email: '', type: 'entreprise', ville: 'Abidjan', adresse: 'Plateau', visits: 2, last_visit: day(-5), date_creation: day(-45) },
+      { id: 6, nom: 'Fatou Démo', tel: '0700000006', wa: '0700000006', email: '', type: 'individuel', ville: 'Bingerville', adresse: '', visits: 1, last_visit: day(-3), date_creation: day(-20) }
+    ];
+    var vehicles = [
+      { id: 1, client_id: 1, plaque: '1001 DEMO 01', marque: 'Toyota', modele: 'Corolla', annee: 2016, km: 142000, couleur: 'Gris' },
+      { id: 2, client_id: 2, plaque: '1002 DEMO 01', marque: 'Hyundai', modele: 'Accent', annee: 2018, km: 98000, couleur: 'Blanc' },
+      { id: 3, client_id: 3, plaque: '1003 DEMO 01', marque: 'Toyota', modele: 'Hilux', annee: 2019, km: 187000, couleur: 'Blanc' },
+      { id: 4, client_id: 3, plaque: '1004 DEMO 01', marque: 'Renault', modele: 'Kangoo', annee: 2017, km: 210000, couleur: 'Blanc' },
+      { id: 5, client_id: 4, plaque: '1005 DEMO 01', marque: 'Peugeot', modele: '308', annee: 2014, km: 165000, couleur: 'Noir' },
+      { id: 6, client_id: 5, plaque: '1006 DEMO 01', marque: 'Kia', modele: 'Picanto', annee: 2020, km: 54000, couleur: 'Rouge' },
+      { id: 7, client_id: 6, plaque: '1007 DEMO 01', marque: 'Nissan', modele: 'Qashqai', annee: 2015, km: 131000, couleur: 'Bleu' },
+      { id: 8, client_id: 1, plaque: '1008 DEMO 01', marque: 'Suzuki', modele: 'Swift', annee: 2012, km: 176000, couleur: 'Argent' }
+    ];
+    function veh(id) { return vehicles.filter(function (v) { return v.id === id; })[0]; }
+    function cli(id) { return clients.filter(function (c) { return c.id === id; })[0]; }
+    function or(n, vid, type, statut, montant, tech, dAgo, remise, prio, desc) {
+      var v = veh(vid), c = cli(v.client_id);
+      return { id: 'OR-' + n, vehicle_id: vid, plaque: v.plaque, marque: v.marque + ' ' + v.modele, client: c.nom, client_id: c.id, type: type, tech: tech, meca: tech,
+        priorite: prio || 'normale', statut: statut, montant: montant, description: desc || type, diagnostic: desc || type, km: v.km, date_remise: remise, pieces: [], date: day(-dAgo) };
+    }
+    var interventions = [
+      or(2021, 1, 'Vidange + filtres', 'Terminé', 45000, 'Ibrahim Démo', 3, day(-2), 'normale'),
+      or(2022, 3, 'Remplacement plaquettes de frein', 'En cours', 85000, 'Kouamé Démo', 2, day(1), 'urgente'),
+      or(2023, 2, 'Diagnostic électrique', 'En cours', 30000, 'Ibrahim Démo', 6, day(-3), 'normale', 'Voyant moteur allumé'),
+      or(2024, 4, 'Courroie de distribution', 'En attente', 120000, 'Kouamé Démo', 5, day(2), 'normale'),
+      or(2025, 5, 'Révision complète', 'Terminé', 95000, 'Moussa Démo', 12, day(-10), 'normale'),
+      or(2026, 6, 'Changement pneus', 'Terminé', 160000, 'Ibrahim Démo', 7, day(-6), 'normale'),
+      or(2027, 7, 'Climatisation', 'En attente', 55000, 'Moussa Démo', 1, day(4), 'normale')
+    ];
+    var factures = [
+      { id: 'F-1001', client_id: 4, or_id: 'OR-2025', montant: 95000, statut: 'Payée', mode: 'Espèces', date: day(-11), facture_type: 'SIMPLE', type: 'SIMPLE' },
+      { id: 'F-1002', client_id: 5, or_id: 'OR-2026', montant: 160000, statut: 'Partiel', mode: 'Mobile Money', date: day(-20), facture_type: 'SIMPLE', type: 'SIMPLE' },
+      { id: 'F-1003', client_id: 3, or_id: 'OR-2018', montant: 240000, statut: 'En attente', mode: '—', date: day(-25), facture_type: 'SIMPLE', type: 'SIMPLE' },
+      { id: 'F-1004', client_id: 2, or_id: 'OR-2019', montant: 38000, statut: 'Payée', mode: 'Espèces', date: day(-4), facture_type: 'SIMPLE', type: 'SIMPLE' }
+    ];
+    function p(id, ref, nom, cat, icon, qty, min, pa, pv, f) { return { id: id, ref: ref, nom: nom, cat: cat, icon: icon, qty: qty, min: min, pa: pa, pv: pv, fournisseur: f }; }
+    var stock = [
+      p(1, 'FLT-001', 'Filtre à huile', 'filtration', '🔩', 14, 5, 3000, 5000, 'Fournisseur Démo'),
+      p(2, 'FLT-002', 'Filtre à air', 'filtration', '🔩', 9, 4, 4000, 7000, 'Fournisseur Démo'),
+      p(3, 'FRN-001', 'Plaquettes de frein avant', 'freinage', '🔴', 2, 4, 14000, 22000, 'Fournisseur Démo'),
+      p(4, 'FRN-002', 'Disques de frein avant', 'freinage', '🔴', 0, 2, 30000, 45000, 'Fournisseur Démo'),
+      p(5, 'MOT-001', 'Huile moteur 5W30 (5 L)', 'moteur', '🛢️', 20, 8, 18000, 27000, 'Fournisseur Démo'),
+      p(6, 'ELE-001', 'Batterie 60 Ah', 'electricite', '⚡', 5, 2, 45000, 65000, 'Fournisseur Démo'),
+      p(7, 'PNE-001', 'Pneu 195/65 R15', 'pneumatiques', '🛞', 12, 6, 32000, 42000, 'Fournisseur Démo'),
+      p(8, 'AUT-001', 'Balai d\'essuie-glace', 'autre', '📦', 11, 4, 2500, 4500, 'Fournisseur Démo')
+    ];
+    var personnel = [
+      { id: 1, nom: 'Ibrahim Démo', poste: 'Mécanicien', tel: '0700000011', wa: '0700000011', embauche: day(-900), salaire: 150000, specialite: 'Moteur', interv: 0, note: 0 },
+      { id: 2, nom: 'Kouamé Démo', poste: 'Mécanicien', tel: '0700000012', wa: '0700000012', embauche: day(-600), salaire: 140000, specialite: 'Freinage', interv: 0, note: 0 },
+      { id: 3, nom: 'Moussa Démo', poste: 'Électricien auto', tel: '0700000013', wa: '0700000013', embauche: day(-300), salaire: 145000, specialite: 'Électricité', interv: 0, note: 0 }
+    ];
+    var rdv = [
+      { id: 'RDV-D1', date: day(0), heure: '09:00', duree: 60, priorite: 'normale', notes: '', client: 'Koffi Démo', vehicle: '1001 DEMO 01', type: 'revision', label: 'Révision', statut: 'attente', color: '#f97316' },
+      { id: 'RDV-D2', date: day(0), heure: '14:30', duree: 90, priorite: 'normale', notes: '', client: 'Awa Démo', vehicle: '1002 DEMO 01', type: 'diagnostic', label: 'Diagnostic', statut: 'attente', color: '#3b82f6' },
+      { id: 'RDV-D3', date: day(2), heure: '10:00', duree: 60, priorite: 'normale', notes: '', client: 'Fatou Démo', vehicle: '1007 DEMO 01', type: 'revision', label: 'Révision', statut: 'attente', color: '#f97316' }
+    ];
+    var vt = [
+      { id: 'VT-D1', vehicle: '1001 DEMO 01', marque: 'Toyota Corolla', client: 'Koffi Démo', tel: '0700000001', dateObtention: day(-340), dateExpiration: day(25), centre: 'SONASUT', cout: 25000, statut: 'urgent', vehicle_id: 1, client_id: 1 },
+      { id: 'VT-D2', vehicle: '1005 DEMO 01', marque: 'Peugeot 308', client: 'Moussa Démo', tel: '0700000004', dateObtention: day(-400), dateExpiration: day(-12), centre: 'SONASUT', cout: 25000, statut: 'expired', vehicle_id: 5, client_id: 4 },
+      { id: 'VT-D3', vehicle: '1006 DEMO 01', marque: 'Kia Picanto', client: 'Pharmacie Démo', tel: '0700000005', dateObtention: day(-100), dateExpiration: day(265), centre: 'SONASUT', cout: 25000, statut: 'valide', vehicle_id: 6, client_id: 5 }
+    ];
+    return {
+      db: { clients: clients, vehicles: vehicles, interventions: interventions, stock: stock, factures: factures, personnel: personnel, transactions: [] },
+      mods: { rdv: rdv, vt: vt }
+    };
+  }
+
+  /* ── Sauvegarde / restauration des données locales existantes ──────── */
+  function snapshot() {
+    var snap = {};
+    Object.keys(localStorage).forEach(function (k) { if (OURS.test(k) && k !== BACKUP) snap[k] = localStorage.getItem(k); });
+    return snap;
+  }
+  function wipe() {
+    Object.keys(localStorage).forEach(function (k) { if (OURS.test(k) && k !== BACKUP) localStorage.removeItem(k); });
+  }
+
+  function start() {
+    try { if (localStorage.getItem('gp_demo') === '1') { location.href = 'index.html'; return; } } catch (e) {}
+    var btn = $('go'); btn.disabled = true; $('msg').textContent = 'Préparation des données…';
+    if (!window.crypto || !crypto.subtle) { $('msg').textContent = 'Ce navigateur n\'autorise pas la démonstration (connexion sécurisée requise).'; btn.disabled = false; return; }
+    sha256('Demo@Garage2026').then(function (hash) {
+      try {
+        if (localStorage.getItem('gp_demo') !== '1') localStorage.setItem(BACKUP, JSON.stringify(snapshot()));   /* ne jamais écraser la vraie sauvegarde */
+        wipe();
+        var d = build();
+        localStorage.setItem('gp_db_v20', JSON.stringify(d.db));
+        localStorage.setItem('gp_modules_v20', JSON.stringify(d.mods));
+        localStorage.setItem('gp_users_v19', JSON.stringify([{ id: 1, login: 'demo', name: 'Démonstration', pwd: hash, role: 'admin', status: 'actif' }]));
+        localStorage.setItem('gp_demo', '1');
+        $('msg').textContent = 'Ouverture de l\'application…';
+        location.href = 'index.html';
+      } catch (e) {
+        $('msg').textContent = 'Impossible d\'enregistrer les données sur cet appareil (stockage plein ou bloqué).';
+        btn.disabled = false;
+      }
+    });
+  }
+
+  function quit() {
+    try {
+      var raw = localStorage.getItem(BACKUP), snap = raw ? JSON.parse(raw) : {};
+      wipe();
+      Object.keys(snap).forEach(function (k) { localStorage.setItem(k, snap[k]); });
+      localStorage.removeItem(BACKUP);
+      localStorage.removeItem('gp_demo');
+      $('msg2').textContent = Object.keys(snap).length ? '✅ Démonstration effacée, vos données précédentes sont restaurées.' : '✅ Démonstration effacée.';
+    } catch (e) { $('msg2').textContent = 'Erreur pendant la restauration : ' + e.message; }
+  }
+
+  $('go').addEventListener('click', start);
+  $('exit').addEventListener('click', quit);
+  try { if (localStorage.getItem('gp_demo') === '1') { $('go').textContent = '▶ Reprendre la démonstration'; $('msg').textContent = 'Une démonstration est en cours sur cet appareil.'; } } catch (e) {}
+  if (location.hash === '#quitter') $('quit').scrollIntoView();
+})();
+</script>
+</body>
+</html>
