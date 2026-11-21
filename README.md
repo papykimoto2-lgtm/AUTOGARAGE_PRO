@@ -20,7 +20,7 @@ Développé par **SANIX AFRICA — Division Technologies** · 📞 +225 07 79 18
 | Statistiques · Rapports · Agenda / RDV · Personnel | Pilotage, impressions et partages, planning, équipe |
 | Paramétrage | Entreprise, utilisateurs et sécurité, sauvegarde, synchronisation |
 
-Aides intégrées : recherche globale (`/` ou `Ctrl+K`), **aide** (`?` ou `F1`), couleur du thème, installation comme application (PWA).
+Aides intégrées : recherche globale (`/` ou `Ctrl+K`), **aide** (`?` ou `F1`), **mode jour / nuit / auto** (bouton ☀️/🌙 en haut, choix dans le menu) et six couleurs d'accent, installation comme application (PWA). Le mode jour utilise des couleurs foncées pour rester lisible en plein soleil (contraste vérifié automatiquement sur toutes les pages).
 
 ## Installer l'application (téléphone, tablette, ordinateur)
 

@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, interactive-widget=resizes-content">
 <meta name="color-scheme" content="dark">
+<script>/* applique tout de suite le mode jour choisi (évite un flash sombre au chargement) ; palette complète ensuite dans aujourdhui.js */
+(function(){try{var m=localStorage.getItem('gp_mode');var l=m==='light'||(m==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches);if(l){var d=document.documentElement,s=d.style;d.setAttribute('data-ui','light');s.setProperty('--bg-deep','#f3f2f0');s.setProperty('--bg-base','#f9f8f7');s.setProperty('--bg-card','#ffffff');s.setProperty('--text-main','#0f172a');s.setProperty('--text-sub','#475569');s.colorScheme='light';}}catch(e){}})();</script>
 <meta name="theme-color" content="#0a0f1e">
 <meta name="description" content="AutoGarage Pro - Développé par SANIX AFRICA Division Technologies — Cyrille KESSIE">
 <title>AutoGarage Pro</title>

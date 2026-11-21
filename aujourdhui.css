@@ -36,3 +36,35 @@
 .aj-dot{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
 .aj-dot.on{border-color:var(--text-main);box-shadow:0 0 0 2px var(--bg-card)}
 .nav-item.active{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+
+.aj-mode{display:flex;gap:4px;padding:2px 0 6px}
+.aj-mode-btn{flex:1;padding:7px 4px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card2);color:var(--text-sub);font:12px var(--font-body);cursor:pointer;white-space:nowrap}
+.aj-mode-btn:hover{color:var(--text-main)}
+.aj-mode-btn.on{border-color:var(--accent);color:var(--text-main);box-shadow:0 0 0 1px var(--accent) inset}
+#mode-btn{cursor:pointer;font-size:17px}
+html[data-ui="light"]{color-scheme:light}
+
+/* ── Mode jour : couleurs codées en dur dans l'application, ramenées à un contraste lisible ── */
+html[data-ui="light"] [style*="color:#25d366" i],html[data-ui="light"] [style*="color: #25d366" i]{color:#0f6b3a !important}
+html[data-ui="light"] [style*="color:#22c55e" i],html[data-ui="light"] [style*="color: #22c55e" i]{color:#166534 !important}
+html[data-ui="light"] [style*="color:#ef4444" i],html[data-ui="light"] [style*="color: #ef4444" i],html[data-ui="light"] [style*="color:#f87171" i]{color:#b91c1c !important}
+html[data-ui="light"] [style*="color:#3b82f6" i],html[data-ui="light"] [style*="color: #3b82f6" i],html[data-ui="light"] [style*="color:#60a5fa" i]{color:#1d4ed8 !important}
+html[data-ui="light"] [style*="color:#f97316" i],html[data-ui="light"] [style*="color: #f97316" i],html[data-ui="light"] [style*="color:#fb923c" i]{color:#c2410c !important}
+html[data-ui="light"] [style*="color:#eab308" i],html[data-ui="light"] [style*="color: #eab308" i],html[data-ui="light"] [style*="color:#f59e0b" i],html[data-ui="light"] [style*="color:#fbbf24" i]{color:#92400e !important}
+html[data-ui="light"] [style*="color:#a855f7" i],html[data-ui="light"] [style*="color: #a855f7" i],html[data-ui="light"] [style*="color:#c084fc" i]{color:#7e22ce !important}
+html[data-ui="light"] [style*="color:#fff" i],html[data-ui="light"] [style*="color: #fff" i],html[data-ui="light"] [style*="color:#f0f4ff" i],html[data-ui="light"] [style*="color:var(--text-main)" i]{color:var(--text-main)}
+html[data-ui="light"] .btn-whatsapp{background:#0f7a41;color:#fff}
+html[data-ui="light"] .nav-badge.yellow{background:#fbbf24;color:#451a03}
+html[data-ui="light"] .topbar-user .user-role,html[data-ui="light"] .user-role{color:var(--accent) !important}
+html[data-ui="light"] .kpi-accent{opacity:.06}
+html[data-ui="light"] .login-bg{background:radial-gradient(ellipse 60% 50% at 20% 80%,rgba(249,115,22,.10) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 80% 20%,rgba(59,130,246,.09) 0%,transparent 60%)}
+html[data-ui="light"] .sidebar,html[data-ui="light"] .topbar{box-shadow:0 1px 0 var(--border)}
+html[data-ui="light"] ::-webkit-scrollbar-thumb{background:#cbd5e1}
+html[data-ui="light"] #demo-chip{background:#fef3c7;color:#92400e;border-color:#d97706}
+html[data-ui="light"] #aide-modal,html[data-ui="light"] #aj-search,html[data-ui="light"] #inst-modal{background:rgba(15,23,42,.45)}
+html[data-ui="light"] [style*="color:#818cf8" i]{color:#4338ca !important}
+html[data-ui="light"] [style*="color:#2dd4bf" i],html[data-ui="light"] [style*="color:#14b8a6" i]{color:#0f766e !important}
+html[data-ui="light"] [style*="background:var(--accent)" i]{color:#fff !important}
+html[data-ui="light"] .btn-secondary[style*="color:var(--accent)" i]{color:var(--accent)}
+html[data-ui="light"] .login-box{box-shadow:0 12px 40px rgba(15,23,42,.14),0 0 0 1px rgba(15,23,42,.06)}
+html[data-ui="light"] .btn-login{background:var(--accent);color:#fff;box-shadow:0 6px 18px var(--accent-glow)}

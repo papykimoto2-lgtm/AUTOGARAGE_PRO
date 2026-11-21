@@ -1,5 +1,5 @@
 /* Service worker minimal : réseau d'abord, cache en secours (hors ligne). */
-var CACHE = 'autogarage-v6';
+var CACHE = 'autogarage-v7';
 var SHELL = ['./', 'index.html', 'aujourdhui.js', 'cloud.js', 'aide.js', 'aide.css', 'install.js', 'install.css', 'login.css', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'demo.html', 'aujourdhui.css', 'manifest.webmanifest', 'icon.svg'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
