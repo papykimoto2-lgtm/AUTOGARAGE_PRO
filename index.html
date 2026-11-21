@@ -557,6 +557,30 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
 </style>
 
 
+<style id="responsive-fixes">
+/* Correctifs affichage tablette / mobile */
+@media (max-width: 959px) {
+  .page-header, .page-actions, .filter-bar { flex-wrap: wrap; }
+  .page-actions .btn, .page-actions .btn-whatsapp { white-space: nowrap; }
+}
+@media (max-width: 959px) {
+  div[style*="grid-template-columns:1fr 1fr;gap:20px"]:not([style*="margin-top:4px"]) { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 599px) {
+  div[style*="grid-template-columns:1fr 1fr;gap:20px"],
+  #page-rapports div[style*="repeat(3,1fr)"] { grid-template-columns: minmax(0,1fr) !important; }
+  div[style*="grid-template-columns:1fr 1fr;gap:20px"] > * { min-width: 0; }
+  .usr-card { flex-wrap: wrap; }
+  .filter-bar { padding: 10px 12px; gap: 8px; }
+  .filter-bar .filter-sep { display: none; }
+  .filter-bar select, .filter-bar input { max-width: 100%; min-width: 0; }
+  .toast-container { left: 10px; right: 10px; bottom: 72px; }
+  .toast-container > * { max-width: 100%; }
+}
+@media (hover: none) and (pointer: coarse) {
+  .btn-icon { min-width: 36px; min-height: 36px; }
+}
+</style>
 </head>
 <body>
 
@@ -6640,7 +6664,7 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
      JAVASCRIPT
 ════════════════════════════════════════════════════════ -->
 <script>/* Supabase chargé en async — n'est pas requis pour le fonctionnement offline */</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onerror="console.warn('[Sync] SDK Supabase indisponible')"></script>
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onload="try{if(typeof _syncInit==='function')_syncInit();}catch(e){}" onerror="console.warn('[Sync] SDK Supabase indisponible')"></script>
 <script>
 const DB = {
   clients:       [],
@@ -6729,7 +6753,7 @@ function _schedRender(key, fn, delay) {
   if (_renderQueue[key]) { clearTimeout(_renderQueue[key]); }
   _renderQueue[key] = setTimeout(function() {
     delete _renderQueue[key];
-    requestAnimationFrame(fn);
+    requestAnimationFrame(function() { fn(); });
   }, delay);
 }
 
@@ -11408,7 +11432,7 @@ function onVehFlotteChange(flotteId) {
   var f = fl.find(function(x){ return x.id === flotteId; });
   if (!f) { box.style.display = 'none'; return; }
   box.style.display = 'block';
-  box.innerHTML = '&#127970; <b>' + (f.nom||'') + '</b>' +
+  box.innerHTML = '&#127970; <b>' + esc(f.nom||'') + '</b>' +
     (f.secteur ? ' · ' + f.secteur : '') +
     (f.contact ? ' · &#128100; ' + f.contact : '') +
     (f.tel     ? ' · &#128222; ' + f.tel     : '');
@@ -12617,7 +12641,7 @@ function mvtFileLoad(type, input) {
       if (file.type.startsWith('image/')) {
         previewEl.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:120px;border-radius:6px;border:1px solid var(--border)">';
       } else {
-        previewEl.innerHTML = '<div style="padding:8px 12px;background:var(--bg-base);border-radius:6px;font-size:12px;color:var(--blue)">📄 ' + file.name + ' — PDF joint ✓</div>';
+        previewEl.innerHTML = '<div style="padding:8px 12px;background:var(--bg-base);border-radius:6px;font-size:12px;color:var(--blue)">📄 ' + esc(file.name) + ' — PDF joint ✓</div>';
       }
     }
   };
@@ -16656,7 +16680,7 @@ function dmHardReset() {
     'Cette action va :\n\n• Supprimer TOUTES les données\n• Effacer le localStorage\n• Recharger l\'application\n\nImpossible d\'annuler. Continuer ?',
     function() {
       Object.keys(CSV_SCHEMAS).forEach(function(k) { var arr = _dmGetArray(k); if (arr) arr.length = 0; });
-      try { localStorage.clear(); } catch(e) {
+      try { Object.keys(localStorage).filter(function(k){ return /^(gp_|sf_)/.test(k); }).forEach(function(k){ localStorage.removeItem(k); }); } catch(e) {
         ['gp_db_v19','gp_db_v20','gp_modules_v20','gp_transactions','gp_fact_statuts','gp_dm_wiped','sf_flottes','sf_contrats_fl','sf_carburant_fl','sf_maint_prev','sf_diagnostics','sf_outillage','sf_outillage_prets'].forEach(function(k){ try{localStorage.removeItem(k);}catch(ex){} });
       }
       toast('Réinitialisation en cours...', 'info');
@@ -17242,7 +17266,7 @@ function _usrLoad() {
   } catch(e) {}
   // Utilisateurs par défaut
   return [
-    {id:1, login:'admin',    name:'Administrateur', pwd: btoa('admin123'),  role:'admin',    status:'actif'},
+    {id:1, login:'KESSIE',   name:'Administrateur', pwd: 'sha256:b7e4b428901a7b6b517492198e554c97c9c24336b5f643a4ff1f2d0e2ce7a535', role:'admin', status:'actif'},
     {id:2, login:'chef',     name:'Chef Atelier',   pwd: btoa('chef123'),   role:'chef',     status:'actif'},
     {id:3, login:'mecanicien', name:'Mecanicien',   pwd: btoa('meca123'),   role:'meca',     status:'actif'},
     {id:4, login:'caisse',   name:'Caissier',       pwd: btoa('caisse123'), role:'caissier', status:'actif'},
@@ -17290,7 +17314,7 @@ function usrRender() {
       + '<div style="display:flex;gap:4px">'
       +   '<button class="btn-icon" title="Modifier" onclick="usrOpenEdit(' + u.id + ')" style="color:var(--blue);font-size:13px">✏️</button>'
       +   '<button class="btn-icon" title="' + (locked ? 'Activer' : 'Bloquer') + '" onclick="usrToggleStatus(' + u.id + ')" style="color:var(--yellow);font-size:13px">' + (locked ? '🔓' : '🔒') + '</button>'
-      +   (u.login !== 'admin' ? '<button class="btn-icon" title="Supprimer" onclick="usrDelete(' + u.id + ')" style="color:var(--red);font-size:13px">🗑️</button>' : '')
+      +   (u.id !== 1 ? '<button class="btn-icon" title="Supprimer" onclick="usrDelete(' + u.id + ')" style="color:var(--red);font-size:13px">🗑️</button>' : '')
       + '</div>'
       + '</div>';
   }).join('');
@@ -17466,7 +17490,7 @@ function usrDelete(id) {
   var users = _usrLoad();
   var u = users.find(function(x){ return x.id === id; });
   if (!u) return;
-  if (u.login === 'admin') { toast('Impossible de supprimer l\'administrateur principal', 'error'); return; }
+  if (u.id === 1) { toast('Impossible de supprimer l\'administrateur principal', 'error'); return; }
   _sfConfirm('Supprimer l\'utilisateur <strong>' + u.name + '</strong> (@' + u.login + ') ?',
     function() {
       var updated = users.filter(function(x){ return x.id !== id; });
@@ -19257,7 +19281,7 @@ if (document.readyState === 'loading') {
   function _fillContVehicules(sel){
     var s=document.getElementById('cont-vehicules'); if(!s) return;
     sel=sel||[];
-    s.innerHTML=(DB.vehicles||[]).map(function(v){var c=(DB.clients||[]).find(function(c){return c.id===v.client_id;})||{};var chk=sel.some(function(id){return id==v.id;});return '<option value="'+v.id+'"'+(chk?' selected':'')+'>'+v.plaque+' - '+v.marque+' '+(v.modele||'')+' ('+(c.nom||'?')+')</option>';}).join('');
+    s.innerHTML=(DB.vehicles||[]).map(function(v){var c=(DB.clients||[]).find(function(c){return c.id===v.client_id;})||{};var chk=sel.some(function(id){return id==v.id;});return '<option value="'+v.id+'"'+(chk?' selected':'')+'>'+esc(v.plaque)+' - '+esc(v.marque)+' '+esc(v.modele||'')+' ('+esc(c.nom||'?')+')</option>';}).join('');
   }
 
   window.openNewContrat = function(flotteId) {
@@ -19298,7 +19322,7 @@ if (document.readyState === 'loading') {
   /* ══ CRUD CARBURANT ═════════════════════════════════════ */
   function _fillCarbuVehicles(){
     var s=document.getElementById('carbu-vehicle'); if(!s) return;
-    s.innerHTML='<option value="">- Selectionner -</option>'+(DB.vehicles||[]).map(function(v){return '<option value="'+v.id+'">'+v.plaque+' - '+v.marque+' '+(v.modele||'')+'</option>';}).join('');
+    s.innerHTML='<option value="">- Selectionner -</option>'+(DB.vehicles||[]).map(function(v){return '<option value="'+v.id+'">'+esc(v.plaque)+' - '+esc(v.marque)+' '+esc(v.modele||'')+'</option>';}).join('');
   }
   window.openNewCarburant = function() {
     ['carbu-edit-id','carbu-litres','carbu-montant','carbu-km','carbu-conducteur','carbu-station'].forEach(function(id){_set(id,'');});
@@ -19366,7 +19390,7 @@ if (document.readyState === 'loading') {
 
   function _fillMPVehicles(vehId){
     var s=document.getElementById('mp-vehicle'); if(!s) return;
-    s.innerHTML='<option value="">- Selectionner -</option>'+(DB.vehicles||[]).map(function(v){return '<option value="'+v.id+'"'+(v.id==vehId?' selected':'')+'>'+v.plaque+' - '+v.marque+' '+(v.modele||'')+'</option>';}).join('');
+    s.innerHTML='<option value="">- Selectionner -</option>'+(DB.vehicles||[]).map(function(v){return '<option value="'+v.id+'"'+(v.id==vehId?' selected':'')+'>'+esc(v.plaque)+' - '+esc(v.marque)+' '+esc(v.modele||'')+'</option>';}).join('');
     if(vehId) s.value=vehId;
   }
   window.openNewMaintPrev = function(vehId) {
@@ -19578,7 +19602,7 @@ if (document.readyState === 'loading') {
     var f = fl.find(function(x){return x.id===flotteId;});
     if (!f) { box.style.display='none'; return; }
     box.style.display='block';
-    box.innerHTML = '🏢 <b>'+(f.nom||'')+'</b>' +
+    box.innerHTML = '🏢 <b>'+esc(f.nom||'')+'</b>' +
       (f.secteur?' · '+f.secteur:'') +
       (f.contact?' · 👤 '+f.contact:'') +
       (f.tel?' · 📞 '+f.tel:'') +
@@ -20495,10 +20519,7 @@ if (document.readyState === 'loading') {
 </script>
 
 <!-- QR Code library (embarquée offline via CDN cdnjs) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
-
-<!-- QR Code library (embarquée offline via CDN cdnjs) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" async></script>
 
 <!-- ═══════════════════════════════════════════════════════
      SFSELECTSYNC — Synchronisation centralisée des selects
@@ -21349,13 +21370,13 @@ if (document.readyState === 'loading') {
             '<div style="display:flex;align-items:center;gap:4px">'+
               '<span style="font-size:9px;color:var(--text-dim);width:22px">MO</span>'+
               '<input type="number" id="mo-'+item.id+'" value="'+moVal+'" min="0" step="500"'+
-                ' onchange="_onPrixChange(''+item.id+'','mo',this.value)"'+
+                ' onchange="_onPrixChange(\''+item.id+'\',\'mo\',this.value)"'+
                 ' style="width:80px;font-size:11px;font-family:var(--font-mono);background:var(--bg-base);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--text-main);text-align:right">'+
             '</div>'+
             '<div style="display:flex;align-items:center;gap:4px">'+
               '<span style="font-size:9px;color:var(--text-dim);width:22px">Pce</span>'+
               '<input type="number" id="piece-'+item.id+'" value="'+pieceVal+'" min="0" step="500"'+
-                ' onchange="_onPrixChange(''+item.id+'','piece',this.value)"'+
+                ' onchange="_onPrixChange(\''+item.id+'\',\'piece\',this.value)"'+
                 ' style="width:80px;font-size:11px;font-family:var(--font-mono);background:var(--bg-base);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--text-main);text-align:right">'+
             '</div>'+
           '</div>'+
@@ -21364,7 +21385,7 @@ if (document.readyState === 'loading') {
       : '<div class="diag-item-cout" id="cout-'+item.id+'">'+_coutItemVal(moVal,pieceVal,st)+'</div>';
     return '<div class="diag-item'+(st!=='ok'?' has-issue':'')+'" id="row-'+item.id+'">' +
       '<div class="diag-item-label">'+_x(item.label)+'</div>' +
-      '<input class="diag-item-note" placeholder="Observation..." value="'+_x(note)+'" onchange="_onNoteChange(''+item.id+'',this.value)">' +
+      '<input class="diag-item-note" placeholder="Observation..." value="'+_x(note)+'" onchange="_onNoteChange(\''+item.id+'\',this.value)">' +
       '<div class="diag-radio-group">' +
         _radio(n, item.id, 'ok',         st, '&#9989; OK',         'diag-r-ok   diag-lbl-ok') +
         _radio(n, item.id, 'surveiller', st, '&#128065; Surveill.', 'diag-r-surv diag-lbl-surv') +
@@ -21378,7 +21399,7 @@ if (document.readyState === 'loading') {
   function _radio(name, itemId, val, checked, label, cls) {
     var pair = cls.trim().split(/\s+/);
     var rCls = pair[0]||'', lCls = pair[1]||'';
-    return '<input type="radio" class="diag-radio '+rCls+'" name="'+name+'" id="r-'+itemId+'-'+val+'" value="'+val+'"'+(checked===val?' checked':'')+' onchange="_onStatutChange(''+itemId+'',''+val+'')">' +
+    return '<input type="radio" class="diag-radio '+rCls+'" name="'+name+'" id="r-'+itemId+'-'+val+'" value="'+val+'"'+(checked===val?' checked':'')+' onchange="_onStatutChange(\''+itemId+'\',\''+val+'\')">' +
            '<label class="diag-radio-lbl '+lCls+'" for="r-'+itemId+'-'+val+'">'+label+'</label>';
   }
 
@@ -21447,13 +21468,13 @@ if (document.readyState === 'loading') {
               '<div style="display:flex;align-items:center;gap:4px">'+
                 '<span style="font-size:9px;color:var(--text-dim);width:22px">MO</span>'+
                 '<input type="number" id="mo-'+itemId+'" value="'+mo+'" min="0" step="500"'+
-                  ' onchange="_onPrixChange(''+itemId+'','mo',this.value)"'+
+                  ' onchange="_onPrixChange(\''+itemId+'\',\'mo\',this.value)"'+
                   ' style="width:80px;font-size:11px;font-family:var(--font-mono);background:var(--bg-base);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--text-main);text-align:right">'+
               '</div>'+
               '<div style="display:flex;align-items:center;gap:4px">'+
                 '<span style="font-size:9px;color:var(--text-dim);width:22px">Pce</span>'+
                 '<input type="number" id="piece-'+itemId+'" value="'+piece+'" min="0" step="500"'+
-                  ' onchange="_onPrixChange(''+itemId+'','piece',this.value)"'+
+                  ' onchange="_onPrixChange(\''+itemId+'\',\'piece\',this.value)"'+
                   ' style="width:80px;font-size:11px;font-family:var(--font-mono);background:var(--bg-base);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--text-main);text-align:right">'+
               '</div>'+
             '</div>'+
@@ -21973,7 +21994,7 @@ if (document.readyState === 'loading') {
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
 
           /* FINE */
-          '<button id="btn-choix-fine" onclick="window._choixTypeFacture('FINE')" style="' +
+          '<button id="btn-choix-fine" onclick="window._choixTypeFacture(\'FINE\')" style="' +
             'background:rgba(99,102,241,.12);border:2px solid rgba(99,102,241,.4);border-radius:12px;' +
             'padding:16px 12px;cursor:pointer;text-align:left;color:#f0f4ff;transition:all .2s">' +
             '<div style="font-size:20px;margin-bottom:6px">📋</div>' +
@@ -21982,7 +22003,7 @@ if (document.readyState === 'loading') {
           '</button>' +
 
           /* Simple */
-          '<button id="btn-choix-simple" onclick="window._choixTypeFacture('simple')" style="' +
+          '<button id="btn-choix-simple" onclick="window._choixTypeFacture(\'simple\')" style="' +
             'background:rgba(249,115,22,.12);border:2px solid rgba(249,115,22,.4);border-radius:12px;' +
             'padding:16px 12px;cursor:pointer;text-align:left;color:#f0f4ff;transition:all .2s">' +
             '<div style="font-size:20px;margin-bottom:6px">🧾</div>' +
@@ -21993,7 +22014,7 @@ if (document.readyState === 'loading') {
         '</div>' +
 
         '<div style="text-align:center">' +
-          '<button onclick="document.getElementById('modal-choix-facture-type').remove()" ' +
+          '<button onclick="document.getElementById(\'modal-choix-facture-type\').remove()" ' +
             'style="padding:8px 20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#8899bb;font-size:12px;cursor:pointer">' +
             'Annuler' +
           '</button>' +
@@ -22793,7 +22814,58 @@ window.printFicheVie = window.exportFichePDF;
   window._doLoginSHA256 = function() { window.doLogin(); };
   window._usrSaveSHA256 = function() { window.usrSave(); };
 
+  /* ── Anti brute-force : verrouillage progressif après 5 échecs ── */
+  var _LF_KEY = 'gp_login_fail';
+  function _lfGet() { try { return JSON.parse(localStorage.getItem(_LF_KEY)) || {n:0,until:0}; } catch(e) { return {n:0,until:0}; } }
+  function _lfSet(o) { try { localStorage.setItem(_LF_KEY, JSON.stringify(o)); } catch(e) {} }
+  function _lfShow(msg) {
+    var el = document.getElementById('login-error');
+    if (el) { el.textContent = msg; el.style.display = ''; }
+    if (typeof toast === 'function') toast(msg.replace(/^❌ /, ''), 'error');
+  }
+  function _lfFail() {
+    var s = _lfGet(); s.n++;
+    if (s.n >= 5) { s.until = Date.now() + Math.min(30 * 60000, 30000 * Math.pow(2, s.n - 5)); }
+    _lfSet(s);
+  }
+
+  /* ── Changement obligatoire des mots de passe par défaut ── */
+  var _DEFAULT_PWDS = ['admin123', 'chef123', 'meca123', 'caisse123'];
+  function _forcePwdChange(user, onDone) {
+    var old = document.getElementById('force-pwd-modal'); if (old) old.remove();
+    var m = document.createElement('div');
+    m.id = 'force-pwd-modal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;display:flex;align-items:center;justify-content:center';
+    m.innerHTML = '<div style="background:#0e1528;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:24px;width:380px;max-width:92vw;color:#f0f4ff">'
+      + '<strong style="font-size:15px">🔐 Changement de mot de passe obligatoire</strong>'
+      + '<p style="font-size:12px;color:#8899bb;margin:10px 0 14px">Ce compte utilise un mot de passe par défaut. Choisissez-en un nouveau (8 caractères minimum).</p>'
+      + '<input id="fp-new" type="password" class="login-input" placeholder="Nouveau mot de passe" autocomplete="new-password" style="margin-bottom:8px">'
+      + '<input id="fp-new2" type="password" class="login-input" placeholder="Confirmer" autocomplete="new-password">'
+      + '<div id="fp-err" style="color:#ef4444;font-size:12px;margin-top:8px;min-height:14px"></div>'
+      + '<button id="fp-ok" class="login-btn" style="margin-top:10px;width:100%">Enregistrer et continuer</button></div>';
+    document.body.appendChild(m);
+    document.getElementById('fp-ok').onclick = function() {
+      var a = document.getElementById('fp-new').value, b = document.getElementById('fp-new2').value;
+      var err = document.getElementById('fp-err');
+      if (a.length < 8) { err.textContent = 'Minimum 8 caractères'; return; }
+      if (a !== b) { err.textContent = 'Les mots de passe ne correspondent pas'; return; }
+      if (_DEFAULT_PWDS.indexOf(a) >= 0) { err.textContent = 'Choisissez un mot de passe différent de celui par défaut'; return; }
+      window._pwdHash(a).then(function(hash) {
+        var users = _usrLoad();
+        var u = users.find(function(x) { return x.id === user.id; });
+        if (u) { u.pwd = hash; _usrSave(users); }
+        m.remove();
+        onDone(a);
+      });
+    };
+  }
+
   window.doLogin = function() {
+    var _lf = _lfGet();
+    if (_lf.until > Date.now()) {
+      _lfShow('❌ Trop de tentatives. Réessayez dans ' + Math.ceil((_lf.until - Date.now()) / 1000) + ' s');
+      return;
+    }
     var loginVal = (document.getElementById('login-user').value || '').trim();
     var pwdVal   = document.getElementById('login-pass').value || '';
 
@@ -22807,6 +22879,7 @@ window.printFicheVie = window.exportFichePDF;
     var user  = users.find(function(u) { return u.login === loginVal; });
 
     if (!user) {
+      _lfFail();
       var errEl2 = document.getElementById('login-error');
       if (errEl2) { errEl2.textContent = '❌ Identifiant ou mot de passe incorrect'; errEl2.style.display = ''; }
       if (typeof toast === 'function') toast('Identifiant ou mot de passe incorrect', 'error');
@@ -22816,6 +22889,7 @@ window.printFicheVie = window.exportFichePDF;
     // Vérification async SHA-256 (ou legacy btoa)
     window._pwdVerify(pwdVal, user.pwd).then(function(ok) {
       if (!ok) {
+        _lfFail();
         var errEl3 = document.getElementById('login-error');
         if (errEl3) { errEl3.textContent = '❌ Identifiant ou mot de passe incorrect'; errEl3.style.display = ''; }
         if (typeof toast === 'function') toast('Identifiant ou mot de passe incorrect', 'error');
@@ -22823,6 +22897,16 @@ window.printFicheVie = window.exportFichePDF;
       }
       if (user.status === 'inactif') {
         if (typeof toast === 'function') toast("Ce compte est désactivé. Contactez l'administrateur.", 'error');
+        return;
+      }
+
+      _lfSet({n:0,until:0});
+
+      if (_DEFAULT_PWDS.indexOf(pwdVal) >= 0) {
+        _forcePwdChange(user, function(newPwd) {
+          document.getElementById('login-pass').value = newPwd;
+          window.doLogin();
+        });
         return;
       }
 
@@ -22872,7 +22956,7 @@ window.printFicheVie = window.exportFichePDF;
     if (!login)  { if (typeof toast==='function') toast('Identifiant obligatoire', 'error'); return; }
     if (!name)   { if (typeof toast==='function') toast('Nom complet obligatoire', 'error'); return; }
     if (pwd && pwd !== pwd2) { if (typeof toast==='function') toast('Les mots de passe ne correspondent pas', 'error'); return; }
-    if (pwd && pwd.length < 4) { if (typeof toast==='function') toast('Mot de passe trop court (4 car. min.)', 'error'); return; }
+    if (pwd && pwd.length < 8) { if (typeof toast==='function') toast('Mot de passe trop court (8 car. min.)', 'error'); return; }
 
     var pages = null;
     if (role === 'custom') {
@@ -22929,10 +23013,24 @@ window.printFicheVie = window.exportFichePDF;
      on les re-hashe en SHA-256 silencieusement.
   ──────────────────────────────────────────────────────────────────────── */
 
+  /* Migration compte admin : l'ancien admin/admin123 (jamais modifié) devient KESSIE */
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      if (typeof _usrLoad !== 'function' || typeof _usrSave !== 'function') return;
+      var users = _usrLoad();
+      var a = users.find(function(u) { return u.id === 1 && u.login === 'admin' && u.role === 'admin'; });
+      if (!a) return;
+      window._pwdHash('admin123').then(function(h0) {
+        if (a.pwd !== h0 && a.pwd !== btoa('admin123')) return; // mot de passe déjà personnalisé : on ne touche pas
+        a.login = 'KESSIE';
+        a.pwd = 'sha256:b7e4b428901a7b6b517492198e554c97c9c24336b5f643a4ff1f2d0e2ce7a535';
+        _usrSave(users);
+      });
+    }, 600);
+  });
+
   // Mots de passe par défaut (production)
-  var _DEMO_PWDS = {
-    'admin': 'admin123'
-  };
+  var _DEMO_PWDS = {}; // ne jamais réinjecter de mot de passe connu
 
   document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
