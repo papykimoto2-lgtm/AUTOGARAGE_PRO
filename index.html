@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, interactive-widget=resizes-content">
+<meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0a0f1e">
 <meta name="description" content="AutoGarage Pro - Développé par SANIX AFRICA Division Technologies — Cyrille KESSIE">
 <title>AutoGarage Pro</title>
@@ -558,6 +559,25 @@ select.form-control option[value=""]{color:var(--text-dim);font-style:italic}
 
 
 <style id="responsive-fixes">
+/* Rendu Android : plus de couches plein écran avec flou permanentes.
+   Avant : ~dizaines de .modal-overlay (fixed + backdrop-filter) toujours composées, même à opacity:0
+   → blocs noirs au clavier sur Chrome Android et lenteurs. Maintenant : hors du rendu tant qu'elles sont fermées. */
+.modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; visibility: hidden; transition: opacity .2s, visibility 0s linear .2s; }
+.modal-overlay.show { visibility: visible; transition: opacity .2s, visibility 0s; }
+@media (hover: hover) and (pointer: fine) {
+  .modal-overlay.show { backdrop-filter: blur(4px); }
+}
+.sidebar-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+#login-screen { background: var(--bg-deep); height: 100vh; height: 100dvh; overflow-y: auto; align-items: flex-start !important; justify-content: center !important; }
+#login-screen .login-box { margin: auto; }
+body:has(#app:not(.show)) #agp-bottom-nav { display: none !important; }
+body:has(#app:not(.show)) { padding-bottom: 0 !important; }
+.login-input:-webkit-autofill, .login-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px #0a0f1e inset; -webkit-text-fill-color: #f0f4ff; caret-color: #f0f4ff;
+}
+@media (max-width: 599px) {
+  .login-box { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+}
 /* Correctifs affichage tablette / mobile */
 @media (max-width: 959px) {
   .page-header, .page-actions, .filter-bar { flex-wrap: wrap; }
@@ -11346,7 +11366,9 @@ function sendInvoiceWhatsApp() {
 
 // ─── MODALS ───────────────────────────────────────────────
 function openModal(id) {
-  document.getElementById(id).classList.add('show');
+  var _m = document.getElementById(id);
+  if (!_m) { if (typeof toast === 'function') toast('Fenêtre indisponible : ' + id, 'error'); return; }
+  _m.classList.add('show');
   if (id==='modal-vehicle') populateVehClientSelect();
   if (id==='modal-or') { populateORVehicleSelect(); populateORMecanicienSelect(); }
   if (id==='modal-entretien') { populateEntretienVehicleSelect(); populateORMecanicienSelect('', 'ent-meca'); }
@@ -11369,7 +11391,8 @@ function populateVTVehicleSelect() {
   s.innerHTML = '<option>— Sélectionner —</option>' + DB.vehicles.map(function(v){ return '<option value="'+esc(v.id)+'">' + esc(v.plaque) + ' — ' + esc(v.marque) + ' ' + esc(v.modele) + '</option>'; }).join('');
 }
 function closeModal(id) {
-  document.getElementById(id).classList.remove('show');
+  var _c = document.getElementById(id);
+  if (_c) _c.classList.remove('show');
   if (id === 'modal-prix-piece') {
     var pSel = document.getElementById('pp-piece');
     var fSel = document.getElementById('pp-fourn');
@@ -18567,15 +18590,10 @@ function isTabletSize()  { return window.innerWidth <= TABLET_BP; }
 
 /* ── Unlock viewport sur vrais mobiles ────────────────────── */
 function fixViewport() {
-  var meta = document.querySelector('meta[name="viewport"]');
-  if (!meta) return;
-  if (isTouchDevice() || isTabletSize()) {
-    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
-    document.body.classList.add('is-mobile');
-  } else {
-    meta.content = 'width=1280';
-    document.body.classList.remove('is-mobile');
-  }
+  /* Le <meta viewport> est statique : le réécrire à chaque redimensionnement (clavier) faisait réévaluer
+     la mise en page par Chrome Android (blocs non repeints). On ne gère plus que la classe. */
+  if (isTouchDevice() || isTabletSize()) document.body.classList.add('is-mobile');
+  else document.body.classList.remove('is-mobile');
 }
 
 /* ── Hamburger button ──────────────────────────────────────── */
@@ -18739,8 +18757,6 @@ if (document.readyState === 'loading') {
   'use strict';
 
   function _forceViewport() {
-    var m = document.querySelector('meta[name="viewport"]');
-    if (m) m.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0';
     document.body.classList.add('is-mobile');
     document.body.style.minWidth = '0';
     document.body.style.overflowX = 'hidden';
@@ -18748,8 +18764,6 @@ if (document.readyState === 'loading') {
 
   function _patchFixViewport() {
     window.fixViewport = function() {
-      var m = document.querySelector('meta[name="viewport"]');
-      if (m) m.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0';
       document.body.classList.add('is-mobile');
       document.body.style.minWidth = '0';
     };
