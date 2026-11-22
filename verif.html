@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Vérification de document</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#111827;--sub:#4b5563;--bd:#d1d5db;--ok:#166534;--okbg:#dcfce7;--ko:#991b1b;--kobg:#fee2e2;--wait:#92400e;--waitbg:#fef3c7;--ac:#c2410c}
+@media (prefers-color-scheme:dark){:root{--bg:#0a0f1e;--card:#0e1528;--tx:#f0f4ff;--sub:#a9b6d3;--bd:#27324f;--ok:#86efac;--okbg:#14532d;--ko:#fecaca;--kobg:#7f1d1d;--wait:#fde68a;--waitbg:#78350f;--ac:#fb923c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{width:100%;max-width:460px;background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:24px}
+h1{font-size:17px;margin:0 0 2px}h1 span{color:var(--ac)}.sub{color:var(--sub);font-size:13px;margin-bottom:16px}
+.st{border-radius:12px;padding:14px 16px;font-weight:700;font-size:16px;margin-bottom:14px}
+.st.ok{background:var(--okbg);color:var(--ok)}.st.ko{background:var(--kobg);color:var(--ko)}.st.wait{background:var(--waitbg);color:var(--wait)}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}dt{color:var(--sub)}dd{margin:0;font-weight:600;word-break:break-word}
+.note{margin-top:16px;color:var(--sub);font-size:12.5px;border-top:1px solid var(--bd);padding-top:12px}
+</style>
+</head>
+<body>
+<main class="card" id="card" aria-live="polite">
+  <h1>Auto<span>Garage</span> Pro — Vérification</h1>
+  <div class="sub">Authenticité d'un document imprimé</div>
+  <div class="st wait" id="st">Vérification en cours…</div>
+  <dl id="dl"></dl>
+  <div class="note" id="note"></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var URL_ = 'https://seppjannzatoduoperxn.supabase.co', KEY = 'sb_publishable_sOEQtfxmCEllwZW_6Qh1LA_vJAY9w4F';
+  var q = new URLSearchParams(location.search), code = (q.get('c') || '').trim(), h = (q.get('h') || '').trim();
+  var st = document.getElementById('st'), dl = document.getElementById('dl'), note = document.getElementById('note');
+  function set(cls, txt) { st.className = 'st ' + cls; st.textContent = txt; }
+  function row(k, v) { var a = document.createElement('dt'), b = document.createElement('dd'); a.textContent = k; b.textContent = v; dl.appendChild(a); dl.appendChild(b); }
+  function frDT(s) { var d = new Date(s); return isNaN(d) ? '—' : d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+  if (!/^AG-[0-9A-F]{10}$/.test(code) || !/^[0-9a-f]{16}$/.test(h)) { set('ko', '❌ Code illisible ou incomplet'); note.textContent = 'Le QR code ne correspond pas au format attendu. Rescannez le document.'; return; }
+  fetch(URL_ + '/rest/v1/rpc/verifier_document', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY }, body: JSON.stringify({ p_id: code, p_h: h }) })
+    .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+    .then(function (d) {
+      if (!d || !d.trouve) { set('ko', '❌ Document non reconnu'); note.textContent = 'Aucun document enregistré ne correspond à ce code. Il est peut-être falsifié, ou il vient d\'être imprimé hors ligne et n\'est pas encore synchronisé : réessayez dans quelques minutes.'; return; }
+      set('ok', '✅ Document authentique');
+      row('N°', d.id); row('Document', d.type || '—'); if (d.ref) row('Référence', d.ref); if (d.montant) row('Montant', d.montant);
+      row('Entreprise', d.entreprise || '—'); row('Émis le', frDT(d.date)); row('Émis par', d.emis_nom || '—');
+      row('Impressions', String(d.impressions || 1));
+      note.textContent = 'Comparez ces informations avec le document papier : si l\'une diffère (référence, montant, date), le document a été modifié.';
+    })
+    .catch(function () { set('wait', '⚠️ Vérification impossible'); note.textContent = 'Connexion au serveur impossible. Vérifiez votre connexion internet puis rescannez le QR code.'; });
+})();
+</script>
+</body>
+</html>
