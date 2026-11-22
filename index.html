@@ -629,6 +629,8 @@ body:has(#app:not(.show)) { padding-bottom: 0 !important; }
 <script defer src="validations.js"></script>
 <script defer src="etats.js"></script>
 <script defer src="pilotage.js"></script>
+<script defer src="qr.js"></script>
+<script defer src="impression.js"></script>
 <script defer src="install.js"></script>
 </head>
 <body>
@@ -8918,6 +8920,7 @@ function genererRapport(type) {
   }
   var iDoc = iframe.contentDocument || iframe.contentWindow.document;
   iDoc.open(); iDoc.write(fullHTML); iDoc.close();
+  try { if (window.GPPrint) GPPrint.enrich({ document: iDoc }); } catch(e) {}
   setTimeout(function() {
     try {
       iframe.contentWindow.focus();

@@ -103,6 +103,13 @@ Moteur **ligne par ligne**, testé sur les 30 tables :
 - **Pilotage** (menu *Pilotage*, `pilotage.js`, admin / chef / comptable) : écarts par caissier, délais et taux de rejet de la validation, demandes en attente, motifs de rejet, trésorerie (caisse, remises en transit) et flux journaliers ; export CSV.
 - **Côté serveur** : `supabase/migrations/20261123_caisse_compta.sql` applique les mêmes règles par triggers et RLS (45 tests dans `supabase/tests/caisse_compta.test.sql`).
 
+### Moteur d'impression et QR de sécurité (`impression.js`, `qr.js`, `verif.html`)
+
+- **Entête entreprise** sur tous les documents imprimés : **logo** (Paramétrage → Identité de l'entreprise), raison sociale, coordonnées, RCCM/CC. Les impressions existantes en bénéficient sans modification (le moteur enveloppe `getCompanyPrintHeader`, `getCompanyPrintFooter` et `window.open`).
+- **QR code de sécurité en pied de document** : numéro `AG-XXXXXXXXXX`, empreinte SHA-256 du contenu imprimé, émetteur et date. Un même contenu garde le même numéro (le compteur d'impressions augmente) ; un contenu modifié change de numéro. Option désactivable dans Paramétrage.
+- **Vérification publique** : le QR ouvre `verif.html`, qui interroge la fonction SQL `verifier_document` (identifiant + partie secrète de l'empreinte) et affiche type, référence, date et émetteur à comparer avec le papier. Les documents sont enregistrés dans la table synchronisée `documents_imprimes` (immuable côté serveur : `supabase/migrations/20261124_documents_imprimes.sql`, 16 tests dans `supabase/tests/documents_imprimes.test.sql`).
+- Un document imprimé hors ligne n'est vérifiable qu'après synchronisation. `qr.js` est la bibliothèque *qrcode-generator* de Kazuhiko Arase (licence MIT).
+
 ### Base de données (Supabase)
 
 - 30 tables « document » : `id` (texte) + `data` (JSON de l'enregistrement) + `updated_at` ; plus la table `profiles` (`login`, `nom`, `role`, `pages`, `statut`).
