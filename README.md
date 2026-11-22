@@ -20,7 +20,7 @@ Développé par **SANIX AFRICA — Division Technologies** · 📞 +225 07 79 18
 | Statistiques · Rapports · Agenda / RDV · Personnel | Pilotage, impressions et partages, planning, équipe |
 | Paramétrage | Entreprise, utilisateurs et sécurité, sauvegarde, synchronisation |
 
-Aides intégrées : recherche globale (`/` ou `Ctrl+K`), **aide** (`?` ou `F1`), **mode jour / nuit / auto** (bouton ☀️/🌙 en haut, choix dans le menu) et six couleurs d'accent, installation comme application (PWA). Le mode jour utilise des couleurs foncées pour rester lisible en plein soleil (contraste vérifié automatiquement sur toutes les pages).
+**Pagination automatique** des listes longues (tableaux 10/25/50/100/Tout, grilles de cartes, colonnes d'interventions « Afficher plus »), sans modifier les modules (`pagination.js`). Aides intégrées : recherche globale (`/` ou `Ctrl+K`), **aide** (`?` ou `F1`), **mode jour / nuit / auto** (bouton ☀️/🌙 en haut, choix dans le menu) et six couleurs d'accent, installation comme application (PWA). Le mode jour utilise des couleurs foncées pour rester lisible en plein soleil (contraste vérifié automatiquement sur toutes les pages).
 
 ## Installer l'application (téléphone, tablette, ordinateur)
 
@@ -65,6 +65,8 @@ Application web **statique**, sans étape de compilation.
 | `cloud.js` / `login.css` | Connexion Supabase Auth, profil et rôle, jeton, mot de passe visible, « se souvenir de moi », reconnexion automatique, première synchronisation, mode démonstration |
 | `aide.js` / `aide.css` | Aide intégrée et bandeau de démonstration |
 | `demo.html` | Page de démonstration (données fictives, sauvegarde puis restauration du poste) |
+| `integrite.js` / `.css` | Suppressions en cascade avec impact, modifications répercutées, contrôle des orphelins |
+| `pagination.js` / `.css` | Pagination automatique des tableaux, grilles et colonnes (aucun module à modifier) |
 | `install.js` / `install.css` | Installation de l'application : un clic (Chrome, Edge, Samsung Internet) ou mode d'emploi par appareil (iPhone/iPad, Mac, Firefox) |
 | `sw.js`, `manifest.webmanifest`, `icon*.png`, `apple-touch-icon.png`, `icon.svg` | Fonctionnement hors ligne, installation (PWA) et icônes |
 
@@ -79,6 +81,13 @@ Moteur **ligne par ligne**, testé sur les 30 tables :
 - Rythme : envoi 3 s après un enregistrement, cycle complet toutes les 90 s, à la reprise de l'onglet et au retour du réseau.
 - Numérotation des factures : le compteur repart du plus grand numéro existant (plus de doublons après un rechargement).
 - Le **paramétrage** de l'entreprise est synchronisé (table `config`, écriture réservée à l'administrateur).
+
+### Intégrité des données (`integrite.js`)
+
+- **Suppression en cascade avec impact** : supprimer un client, un véhicule, un ordre de réparation, une facture, une pièce ou un fournisseur affiche ce qui y est lié et propose d'annuler ou de tout supprimer (plus de fiches orphelines). Les éléments **financiers** (factures, encaissements, commandes fournisseur) exigent le rôle **administrateur** et une case de confirmation. Sans lien, le parcours d'origine est inchangé.
+- **Modifications répercutées** : renommer un client ou changer une plaque / marque met à jour les copies (ordres de réparation, entretiens, visites techniques, rendez-vous, caisse, diagnostics).
+- **Contrôle de cohérence** : détecte les orphelins (y compris ceux créés par la synchronisation entre appareils) ; bouton « 🧹 » dans le menu ; nettoyage au choix, jamais automatique pour les factures.
+- Les suppressions en cascade se propagent au cloud par le moteur de synchronisation.
 
 ### Base de données (Supabase)
 

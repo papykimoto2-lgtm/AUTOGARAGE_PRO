@@ -398,6 +398,7 @@
     try { if (typeof saveData === 'function') saveData(); } catch (x) {}
     try { if (typeof _caisseLocalSave === 'function') _caisseLocalSave(); } catch (x) {}
     try { if (typeof window.fixInvoiceCounter === 'function') window.fixInvoiceCounter(); } catch (x) {}
+    try { if (typeof window._integriteRescan === 'function') window._integriteRescan(); } catch (x) {}
     try {
       var active = document.querySelector('.page.active');
       if (active && typeof showPage === 'function') showPage(active.id.replace('page-', ''));
