@@ -613,6 +613,7 @@ body:has(#app:not(.show)) { padding-bottom: 0 !important; }
 <link rel="stylesheet" href="aujourdhui.css">
 <script defer src="aujourdhui.js"></script>
 <script defer src="cloud.js"></script>
+<script defer src="sync.js"></script>
 <link rel="stylesheet" href="aide.css">
 <script defer src="aide.js"></script>
 <link rel="stylesheet" href="install.css">
@@ -3116,7 +3117,7 @@ body:has(#app:not(.show)) { padding-bottom: 0 !important; }
 
   // ── Pull ALL ────────────────────────────────────────────────────────────
   window.dbPullAll = function() {
-    if (!confirm('Récupérer TOUTES les données depuis Supabase ? (Les données locales seront remplacées)')) return;
+    if (!confirm('Récupérer TOUTES les données depuis Supabase ? (fusion : les modifications non envoyées de cet appareil sont conservées)')) return;
     dbLog('Pull complet démarré...', 'info');
     if (typeof window.syncPullNow === 'function') { window.syncPullNow(); dbLog('Pull complet lancé via syncPullNow()', 'ok'); }
     else dbLog('syncPullNow() non disponible', 'err');

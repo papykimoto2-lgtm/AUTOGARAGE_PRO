@@ -66,6 +66,7 @@
     try { (s.remember ? localStorage : sessionStorage).setItem(LS_SESSION, JSON.stringify(s)); } catch (x) {}
   }
 
+  window._cloudUid = function () { var s = load(); return s && s.user && s.user.id ? s.user.id : null; };
   if (!DEMO) window._cloudToken = function () { var s = load(); return s && s.access_token ? s.access_token : null; };
 
   var refreshing = null;
@@ -136,24 +137,10 @@
     setTimeout(function () { initialSync(s.user.id); }, 800);
   }
 
-  /* Première connexion : envoi des données locales ; ensuite : envoi des modifications puis réception */
-  function initialSync(uid) {
-    if (typeof window._syncFlush !== 'function') return;
-    var flag = 'gp_cloud_init_' + uid, first = false;
-    try { first = !localStorage.getItem(flag); } catch (x) {}
-    if (first) {
-      if (typeof _syncMarkDirty === 'function' && typeof _SYNC_TABLE_MAP !== 'undefined') _syncMarkDirty(Object.keys(_SYNC_TABLE_MAP));
-      window._syncFlush(function () {
-        try { localStorage.setItem(flag, '1'); } catch (x) {}
-        toastMsg('☁️ Données locales envoyées vers le cloud', 'success');
-      });
-    } else {
-      var hasDirty = typeof _syncGetDirty === 'function' && Object.keys(_syncGetDirty()).length > 0;
-      var pull = function () { if (typeof window._syncPull === 'function') window._syncPull(null, function () { toastMsg('☁️ Données à jour', 'success'); }); };
-      if (hasDirty) window._syncFlush(pull); else pull();
-    }
+  /* Connexion : cycle complet (réception fusionnée puis envoi des lignes modifiées) */
+  function initialSync() {
+    if (typeof window._syncFull === 'function') window._syncFull({ login: true });
   }
-
 
   /* ── Accès aux tableaux de données (lecture et écriture) ───────────────── */
   /* Les `const`/`let` globaux ne sont pas des propriétés de window : on les atteint par leur nom. */
@@ -201,9 +188,10 @@
     return false;
   };
   /* Les modules à stockage local relisent leurs données au chargement : un rechargement unique les met à jour */
-  window._gpAfterPull = function () {
+  window._gpAfterPull = function (allowReload) {
     if (!lsChanged) return;
     lsChanged = false;
+    if (!allowReload) { toastMsg('Mises à jour Flotte / Diagnostic reçues : rechargez la page pour les afficher', 'info'); return; }
     try { if (sessionStorage.getItem('gp_reload_after_pull')) return; sessionStorage.setItem('gp_reload_after_pull', '1'); } catch (x) {}
     toastMsg('Mise à jour des modules Flotte / Diagnostic…', 'info');
     setTimeout(function () { location.reload(); }, 1800);
@@ -328,6 +316,7 @@
         var s = load(), c = conn();
         if (s && s.access_token) { try { xhr('POST', c.url + '/auth/v1/logout', { apikey: c.key, Authorization: 'Bearer ' + s.access_token }).catch(function () {}); } catch (x) {} }
         save(null);
+        if (typeof window._syncStop === 'function') window._syncStop();
         return origLogout.apply(this, arguments);
       };
       window.doLogout._cloud = true;

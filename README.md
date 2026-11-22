@@ -50,7 +50,7 @@ Prérequis : site servi en **HTTPS** (Vercel le fait). L'application installée 
 
 - **E-mail + mot de passe** : session **Supabase Auth**. Le rôle est lu dans la table `profiles` et **appliqué par le serveur** (RLS) : un utilisateur ne peut pas s'accorder plus de droits depuis son navigateur.
 - **Identifiant sans `@`** : mode **local hors ligne**, données de l'appareil uniquement, sans synchronisation.
-- Les données sont d'abord enregistrées **sur l'appareil**, puis synchronisées vers le cloud (pastille *Synchronisé / Hors ligne* en haut). Première connexion : envoi des données locales ; ensuite : envoi des modifications puis réception.
+- Les données sont d'abord enregistrées **sur l'appareil**, puis synchronisées vers le cloud (pastille *Synchronisé / Hors ligne* en haut).
 - Jeton renouvelé automatiquement ; déconnexion propre.
 - **Afficher le mot de passe** (œil) et **Se souvenir de moi** sur l'écran de connexion : coché, l'e-mail est pré-rempli et la session reste ouverte (reconnexion automatique, y compris hors ligne grâce au profil mis en cache) ; décoché, la session est limitée au navigateur ouvert. Le mot de passe n'est jamais stocké par l'application. Une session révoquée ou un compte désactivé ramène à l'écran de connexion.
 
@@ -68,10 +68,23 @@ Application web **statique**, sans étape de compilation.
 | `install.js` / `install.css` | Installation de l'application : un clic (Chrome, Edge, Samsung Internet) ou mode d'emploi par appareil (iPhone/iPad, Mac, Firefox) |
 | `sw.js`, `manifest.webmanifest`, `icon*.png`, `apple-touch-icon.png`, `icon.svg` | Fonctionnement hors ligne, installation (PWA) et icônes |
 
+### Synchronisation (`sync.js`)
+
+Moteur **ligne par ligne**, testé sur les 30 tables :
+
+- Pour chaque table, une **base** (empreinte de chaque ligne au dernier échange réussi) permet de ne **renvoyer que les lignes modifiées** et de **propager les suppressions**.
+- La **réception fusionne** : une ligne modifiée localement n'est jamais écrasée, une ligne supprimée sur un autre appareil est retirée. Réception **incrémentale** (`updated_at`) avec une sonde légère quand rien n'a changé, et **pagination** (le serveur plafonne à 1000 lignes par requête).
+- **Conflits** (même identifiant créé en même temps sur deux appareils, ou ligne modifiée des deux côtés) : le cloud ou la version locale est gardé selon le cas et **la copie divergente est conservée** (menu → ⚠️ conflits → *Restaurer ma version*). Aucun écrasement silencieux.
+- Garde-fous : une suppression massive (> 20 lignes et > 50 % d'une table) demande confirmation ; une table en lecture seule pour le rôle n'est pas renvoyée en boucle.
+- Rythme : envoi 3 s après un enregistrement, cycle complet toutes les 90 s, à la reprise de l'onglet et au retour du réseau.
+- Numérotation des factures : le compteur repart du plus grand numéro existant (plus de doublons après un rechargement).
+- Le **paramétrage** de l'entreprise est synchronisé (table `config`, écriture réservée à l'administrateur).
+
 ### Base de données (Supabase)
 
 - 30 tables « document » : `id` (texte) + `data` (JSON de l'enregistrement) + `updated_at` ; plus la table `profiles` (`login`, `nom`, `role`, `pages`, `statut`).
 - **RLS activée partout**, aucun accès pour un visiteur non connecté ; droits par rôle (atelier, commercial, clients/véhicules, finance, personnel) via la fonction `app_role()`.
+- Migrations SQL dans `supabase/migrations/` (à exécuter dans *SQL Editor* ; la table `config` et les index de réception incrémentale s'y trouvent).
 - Le projet est configuré dans `index.html` (`_SUPA_URL`, `_SUPA_KEY`). La clé est **publique** (*publishable*) : la sécurité repose sur la RLS, jamais sur le secret de cette clé.
 
 ## Mise en ligne
