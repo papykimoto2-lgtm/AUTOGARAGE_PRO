@@ -154,7 +154,7 @@
   }
 
   /* ── Rôle « Comptable », nouvelles pages et menus ─────────────────────── */
-  var NEW_PAGES = { admin: ['compta', 'validations'], chef: ['validations'], comptable: ['dashboard', 'caisse', 'factures', 'depenses', 'fournisseurs', 'rapports', 'stats', 'compta', 'validations'] };
+  var NEW_PAGES = { admin: ['compta', 'validations', 'pilotage'], chef: ['validations', 'pilotage'], comptable: ['dashboard', 'caisse', 'factures', 'depenses', 'fournisseurs', 'rapports', 'stats', 'compta', 'validations', 'pilotage'] };
   function integrateRoles() {
     try {
       if (typeof ROLES !== 'undefined') {
@@ -195,10 +195,10 @@
   function injectPagesAndNav() {
     var content = document.querySelector('.page-content');
     if (content) {
-      [['validations', 'Validations'], ['compta', 'Comptabilité']].forEach(function (p) {
+      [['validations', 'Validations'], ['compta', 'Comptabilité'], ['pilotage', 'Pilotage']].forEach(function (p) {
         if (!document.getElementById('page-' + p[0])) {
           var d = document.createElement('div'); d.className = 'page'; d.id = 'page-' + p[0];
-          d.innerHTML = '<div class="page-header"><div class="page-title">' + (p[0] === 'compta' ? '📒 Compta<span>bilité</span>' : '✅ <span>Validations</span>') + '</div><div class="page-actions" id="' + p[0] + '-actions"></div></div><div id="' + p[0] + '-root"></div>';
+          d.innerHTML = '<div class="page-header"><div class="page-title">' + (p[0] === 'compta' ? '📒 Compta<span>bilité</span>' : p[0] === 'pilotage' ? '📊 <span>Pilotage</span> de la caisse' : '✅ <span>Validations</span>') + '</div><div class="page-actions" id="' + p[0] + '-actions"></div></div><div id="' + p[0] + '-root"></div>';
           content.appendChild(d);
         }
       });
@@ -211,6 +211,9 @@
       c.innerHTML = '<span class="nav-icon">📒</span> Comptabilité';
       anchor.parentNode.insertBefore(v, anchor.nextSibling);
       v.parentNode.insertBefore(c, v.nextSibling);
+      var pl = document.createElement('div'); pl.className = 'nav-item'; pl.id = 'nav-pilotage'; pl.setAttribute('onclick', "showPage('pilotage')");
+      pl.innerHTML = '<span class="nav-icon">📊</span> Pilotage';
+      c.parentNode.insertBefore(pl, c.nextSibling);
     }
   }
 

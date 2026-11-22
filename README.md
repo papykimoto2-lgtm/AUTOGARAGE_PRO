@@ -19,6 +19,7 @@ Développé par **SANIX AFRICA — Division Technologies** · 📞 +225 07 79 18
 | Facturation · Caisse · Dépenses · Fournisseurs | Factures simples ou normalisées, règlements, sessions de caisse, achats |
 | Statistiques · Rapports · Agenda / RDV · Personnel | Pilotage, impressions et partages, planning, équipe |
 | Validations | Boîte unique de la hiérarchie : bons de caisse, dépenses, visas de clôture, remises à confirmer, écritures à viser, historique motivé |
+| Pilotage | Tableau de bord de la direction : écarts, délais de validation, rejets, trésorerie |
 | Comptabilité | Plan SYSCOHADA simplifié, journaux VT/AC/CA/BQ/OD/AN, écritures automatiques, grand livre, balance, résultat et bilan, TVA, export FEC |
 | Paramétrage | Entreprise, utilisateurs et sécurité, sauvegarde, synchronisation |
 
@@ -98,6 +99,8 @@ Moteur **ligne par ligne**, testé sur les 30 tables :
 - **Validation par la hiérarchie** : plafond par rôle (vide = illimité, 0 = aucun pouvoir), **séparation des tâches** (personne ne valide sa propre demande, administrateur compris ; désactivable pour une très petite structure), décisions **définitives**, **motif obligatoire** en cas de rejet, remises **confirmées par une autre personne** avec la référence de la preuve. Réglages : Validations → « Habilitations et plafonds » (administrateur).
 - **Caisse contrôlée** : PIN personnel à l'ouverture, une seule session ouverte, clôture avec comptage, explication de l'écart, mention des mouvements en attente et **visa de la hiérarchie** si l'écart dépasse la tolérance. Dépenses et paiements fournisseurs passent par la validation.
 - **Comptabilité SYSCOHADA** : écritures automatiques (ventes, encaissements, dépenses validées, factures fournisseurs, écarts, remises) régénérées sans doublon, saisie manuelle équilibrée, **visa**, levée de visa (administrateur, motif tracé), **contre-passation**, clôture et réouverture d'exercice avec à-nouveaux, états et **export FEC**.
+- **Pièces imprimables** (onglet *Caisse → Pièces*, `etats.js`) : journal de caisse du jour, **état de clôture signé** (fonds, comptage, écart, explication, visa, signatures) et **bordereau de remise** banque/direction, à imprimer ou enregistrer en PDF.
+- **Pilotage** (menu *Pilotage*, `pilotage.js`, admin / chef / comptable) : écarts par caissier, délais et taux de rejet de la validation, demandes en attente, motifs de rejet, trésorerie (caisse, remises en transit) et flux journaliers ; export CSV.
 - **Côté serveur** : `supabase/migrations/20261123_caisse_compta.sql` applique les mêmes règles par triggers et RLS (45 tests dans `supabase/tests/caisse_compta.test.sql`).
 
 ### Base de données (Supabase)
