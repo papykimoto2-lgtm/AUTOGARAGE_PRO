@@ -1,0 +1,17 @@
+/* Pagination des listes */
+.pg-hide{display:none !important}
+.pgr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:12px 4px 4px;font-size:12.5px;color:var(--text-sub)}
+.pgr-info{font-family:var(--font-mono);font-size:12px}
+.pgr-nav{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.pgr-b{min-width:34px;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card2);color:var(--text-main);font:13px var(--font-body);cursor:pointer}
+.pgr-b:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pgr-b.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.pgr-b:disabled{opacity:.4;cursor:default}
+.pgr-dots{padding:0 4px;color:var(--text-dim)}
+.pgr-size{display:flex;align-items:center;gap:6px}
+.pgr-size select{height:34px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card2);color:var(--text-main);font:13px var(--font-body)}
+.pgr-more{justify-content:center;padding:8px 0}
+.pgr-moreb{width:100%}
+#vehicles-grid + .pgr,#stock-grid + .pgr{margin-top:8px}
+@media (max-width:599px){.pgr{justify-content:center;text-align:center}.pgr-nav{justify-content:center}.pgr-b{min-width:38px;height:38px}}
+@media print{.pgr{display:none !important}.pg-hide{display:revert !important}tr.pg-hide{display:table-row !important}}

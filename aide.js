@@ -18,6 +18,7 @@
     ]},
     { id: 'modules', title: '🧩 Les modules', items: [
       ['Tableau de bord', 'Interventions du jour, chiffre d\'affaires, véhicules en atelier, alertes de stock, activité récente.'],
+      ['Listes longues : pagination', 'Les tableaux (clients, factures, personnel, dépenses…) s\'affichent par pages de <b>25</b> lignes ; les cartes (véhicules, stock) par <b>24</b>. En bas de la liste : pages <b>‹ 1 2 … 7 ›</b> et choix <b>Par page</b> (10 à 100, ou <b>Tout</b>) mémorisé sur l\'appareil. Une recherche ou un filtre ramène à la page 1. Dans le tableau des interventions, chaque colonne affiche 20 cartes puis <b>Afficher plus</b>. L\'impression affiche toujours toutes les lignes.'],
       ['Clients · Véhicules · Flotte Entreprise', 'Fiches clients (particuliers et entreprises), véhicules avec historique, flottes d\'entreprise avec contrats, carburant et maintenance préventive.'],
       ['Interventions · Entretiens', 'Ordres de réparation suivis par statut (en attente, en cours, terminé), techniciens, dates de remise ; entretiens programmés.'],
       ['Diagnostic & Devis', 'Checklist de contrôle par catégorie avec prix main-d\'œuvre et pièces, génération du devis puis de la facture.'],

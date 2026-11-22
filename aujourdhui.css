@@ -68,3 +68,5 @@ html[data-ui="light"] [style*="background:var(--accent)" i]{color:#fff !importan
 html[data-ui="light"] .btn-secondary[style*="color:var(--accent)" i]{color:var(--accent)}
 html[data-ui="light"] .login-box{box-shadow:0 12px 40px rgba(15,23,42,.14),0 0 0 1px rgba(15,23,42,.06)}
 html[data-ui="light"] .btn-login{background:var(--accent);color:#fff;box-shadow:0 6px 18px var(--accent-glow)}
+/* La pastille « Syncé » ne doit pas recouvrir la barre de navigation du bas (téléphone) */
+@media (max-width:959px){#sf-sync-badge{bottom:74px !important}}

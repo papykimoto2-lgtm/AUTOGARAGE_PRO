@@ -20,7 +20,7 @@ Développé par **SANIX AFRICA — Division Technologies** · 📞 +225 07 79 18
 | Statistiques · Rapports · Agenda / RDV · Personnel | Pilotage, impressions et partages, planning, équipe |
 | Paramétrage | Entreprise, utilisateurs et sécurité, sauvegarde, synchronisation |
 
-Aides intégrées : recherche globale (`/` ou `Ctrl+K`), **aide** (`?` ou `F1`), **mode jour / nuit / auto** (bouton ☀️/🌙 en haut, choix dans le menu) et six couleurs d'accent, installation comme application (PWA). Le mode jour utilise des couleurs foncées pour rester lisible en plein soleil (contraste vérifié automatiquement sur toutes les pages).
+**Pagination automatique** des listes longues (tableaux 10/25/50/100/Tout, grilles de cartes, colonnes d'interventions « Afficher plus »), sans modifier les modules (`pagination.js`). Aides intégrées : recherche globale (`/` ou `Ctrl+K`), **aide** (`?` ou `F1`), **mode jour / nuit / auto** (bouton ☀️/🌙 en haut, choix dans le menu) et six couleurs d'accent, installation comme application (PWA). Le mode jour utilise des couleurs foncées pour rester lisible en plein soleil (contraste vérifié automatiquement sur toutes les pages).
 
 ## Installer l'application (téléphone, tablette, ordinateur)
 
@@ -65,6 +65,7 @@ Application web **statique**, sans étape de compilation.
 | `cloud.js` / `login.css` | Connexion Supabase Auth, profil et rôle, jeton, mot de passe visible, « se souvenir de moi », reconnexion automatique, première synchronisation, mode démonstration |
 | `aide.js` / `aide.css` | Aide intégrée et bandeau de démonstration |
 | `demo.html` | Page de démonstration (données fictives, sauvegarde puis restauration du poste) |
+| `pagination.js` / `.css` | Pagination automatique des tableaux, grilles et colonnes (aucun module à modifier) |
 | `install.js` / `install.css` | Installation de l'application : un clic (Chrome, Edge, Samsung Internet) ou mode d'emploi par appareil (iPhone/iPad, Mac, Firefox) |
 | `sw.js`, `manifest.webmanifest`, `icon*.png`, `apple-touch-icon.png`, `icon.svg` | Fonctionnement hors ligne, installation (PWA) et icônes |
 
