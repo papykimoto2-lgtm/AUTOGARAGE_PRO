@@ -26,13 +26,17 @@
       ['Stock & Pièces · Outillage', 'Références, seuils d\'alerte, dépôts, mouvements, inventaire ; prêts et retours d\'outils.'],
       ['Facturation · Caisse · Dépenses · Fournisseurs', 'Factures (simples ou normalisées), règlements, sessions de caisse, dépenses par catégorie, commandes et dettes fournisseurs.'],
       ['Statistiques · Rapports · Agenda / RDV · Personnel', 'Indicateurs, rapports imprimables ou partagés par WhatsApp, planning des rendez-vous, équipe.'],
+      ['Caisse : bons et validation', 'Le caissier saisit des <b>bons</b> (entrée, sortie, remise en banque ou à la direction, réapprovisionnement). Un bon <b>ne compte qu\'après validation</b> par la hiérarchie, dans la limite de son <b>plafond</b> ; on ne valide jamais sa propre demande et une décision est <b>définitive</b>. Un rejet exige un <b>motif</b>. Une remise doit être <b>confirmée par une autre personne</b> avec la référence de la preuve (bordereau, reçu).'],
+      ['Validations', 'Menu <b>Validations</b> : tout ce qui attend une décision (bons, dépenses, visas de clôture, remises à confirmer, écritures à viser) au même endroit, avec l\'historique des décisions. L\'administrateur règle les <b>plafonds</b> et la séparation des tâches.'],
+      ['Comptabilité', 'Plan SYSCOHADA simplifié et journaux. Les <b>écritures automatiques</b> viennent des factures, encaissements, dépenses validées et bons ventilés ; vous pouvez aussi saisir des écritures équilibrées, les <b>viser</b>, les <b>contre-passer</b>, consulter grand livre, balance, résultat et bilan, TVA, puis <b>clôturer l\'exercice</b> et exporter le <b>FEC</b>.'],
       ['Paramétrage', 'Informations de l\'entreprise, mentions de facture, utilisateurs et sécurité, sauvegarde et synchronisation.']
     ]},
     { id: 'roles', title: '👥 Rôles et droits', items: [
       ['Administrateur', 'Accès à tous les modules, gestion des utilisateurs et du paramétrage.'],
       ['Chef d\'atelier', 'Clients, véhicules, flotte, atelier, stock, outillage, fournisseurs, statistiques, agenda et personnel. Finances en lecture seule côté cloud.'],
       ['Mécanicien', 'Interventions, entretiens, diagnostic, stock et outillage.'],
-      ['Caissier', 'Tableau de bord, facturation, caisse, dépenses et rapports.'],
+      ['Caissier', 'Tableau de bord, facturation, caisse (bons, ouverture avec PIN, clôture), dépenses et rapports. Ses demandes sont validées par la hiérarchie.'],
+      ['Comptable', 'Saisit les écritures comptables et prépare les états ; le <b>visa</b> relève de la hiérarchie. Les comptes comptables se créent dans Utilisateurs (rôle « Comptable »).'],
       ['Qui décide ?', 'Avec une connexion par e-mail, le rôle est stocké dans le cloud et appliqué par le serveur : un utilisateur ne peut pas s\'attribuer plus de droits depuis son navigateur. Un administrateur crée les comptes dans Supabase puis leur profil.']
     ]},
     { id: 'tips', title: '💡 Astuces', items: [

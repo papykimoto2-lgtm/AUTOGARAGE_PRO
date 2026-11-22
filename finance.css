@@ -1,0 +1,38 @@
+/* Caisse & Comptabilité : fenêtres, onglets, états, validations */
+.fin-overlay{position:fixed;inset:0;z-index:10006;background:rgba(0,0,0,.65);display:flex;justify-content:center;align-items:flex-start;padding:7vh 12px 0;overflow-y:auto}
+.fin-box{width:560px;max-width:100%;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:14px;box-shadow:var(--shadow);color:var(--text-main);margin-bottom:24px}
+.fin-wide{width:860px}
+.fin-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 20px 8px}
+.fin-title{font-family:var(--font-head);font-weight:800;font-size:17px}
+.fin-x{background:var(--bg-card2);border:1px solid var(--border);color:var(--text-main);width:32px;height:32px;border-radius:8px;cursor:pointer}
+.fin-body{padding:6px 20px 8px;max-height:68vh;overflow-y:auto}
+.fin-foot{display:flex;justify-content:flex-end;gap:8px;padding:10px 20px 16px;flex-wrap:wrap}
+.fin-note{font-size:12.5px;line-height:1.5;color:var(--text-sub);margin:6px 0 10px}
+.fin-sub{font-size:11px;color:var(--text-sub);margin-top:2px}
+.fin-warn{background:var(--yellow-soft);color:var(--yellow);border-radius:8px;padding:9px 12px;font-size:12.5px;margin:8px 0}
+.fin-ok{background:var(--green-soft);color:var(--green);border-radius:8px;padding:12px;font-size:13px;margin:8px 0;text-align:center;font-weight:600}
+.fin-check{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.45;margin:6px 0;cursor:pointer}
+.fin-check input{margin-top:3px;width:16px;height:16px;accent-color:var(--accent)}
+.fin-st{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600;white-space:nowrap}
+.fin-st-att{background:var(--yellow-soft);color:var(--yellow)}
+.fin-st-ok{background:var(--green-soft);color:var(--green)}
+.fin-st-ko{background:var(--red-soft);color:var(--red)}
+.fin-tabs,.fin-filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;align-items:center}
+.fin-actions{display:flex;flex-wrap:wrap;gap:6px}
+.fin-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 14px}
+.fin-kpis>div{background:var(--bg-base);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.fin-kpis span{display:block;font-size:11px;color:var(--text-sub);margin-bottom:4px}
+.fin-kpis b{font-family:var(--font-head);font-size:19px}
+.fin-checks{list-style:none;padding:0;margin:8px 0}
+.fin-checks li{padding:6px 0 6px 26px;position:relative;font-size:13px}
+.fin-checks li:before{position:absolute;left:0;content:"✅"}
+.fin-checks li.ko:before{content:"⚠️"}
+.fin-rowact{white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap}
+.fin-total td{font-weight:700;border-top:2px solid var(--border-bright)}
+.fin-rupt{background:var(--red-soft)}
+.fin-line{display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:6px}
+#page-compta table,#page-validations table{width:100%}
+@media (max-width:599px){.fin-line{grid-template-columns:1fr 1fr}.fin-line select{grid-column:1/-1}.fin-overlay{padding-top:3vh}.fin-foot .btn{flex:1}}
+
+/* Avatar du caissier (jaune) : texte sombre pour un contraste lisible */
+.usr-avatar[style*="#eab308" i]{color:#1f1300 !important}

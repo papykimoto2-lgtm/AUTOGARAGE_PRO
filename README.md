@@ -18,6 +18,8 @@ Développé par **SANIX AFRICA — Division Technologies** · 📞 +225 07 79 18
 | Stock & Pièces · Outillage | Références, seuils, dépôts, mouvements, inventaire, prêts d'outils |
 | Facturation · Caisse · Dépenses · Fournisseurs | Factures simples ou normalisées, règlements, sessions de caisse, achats |
 | Statistiques · Rapports · Agenda / RDV · Personnel | Pilotage, impressions et partages, planning, équipe |
+| Validations | Boîte unique de la hiérarchie : bons de caisse, dépenses, visas de clôture, remises à confirmer, écritures à viser, historique motivé |
+| Comptabilité | Plan SYSCOHADA simplifié, journaux VT/AC/CA/BQ/OD/AN, écritures automatiques, grand livre, balance, résultat et bilan, TVA, export FEC |
 | Paramétrage | Entreprise, utilisateurs et sécurité, sauvegarde, synchronisation |
 
 **Pagination automatique** des listes longues (tableaux 10/25/50/100/Tout, grilles de cartes, colonnes d'interventions « Afficher plus »), sans modifier les modules (`pagination.js`). Aides intégrées : recherche globale (`/` ou `Ctrl+K`), **aide** (`?` ou `F1`), **mode jour / nuit / auto** (bouton ☀️/🌙 en haut, choix dans le menu) et six couleurs d'accent, installation comme application (PWA). Le mode jour utilise des couleurs foncées pour rester lisible en plein soleil (contraste vérifié automatiquement sur toutes les pages).
@@ -44,6 +46,7 @@ Prérequis : site servi en **HTTPS** (Vercel le fait). L'application installée 
 | Chef d'atelier | Clients, véhicules, flotte, atelier, stock, outillage, fournisseurs, statistiques, agenda, personnel |
 | Mécanicien | Interventions, entretiens, diagnostic, stock, outillage |
 | Caissier | Tableau de bord, facturation, caisse, dépenses, rapports |
+| Comptable | Comptabilité (saisie des écritures), Validations (écritures à viser selon droits), facturation et rapports en lecture |
 | Personnalisé | Liste de modules choisie par l'administrateur |
 
 ## Connexion et données
@@ -88,6 +91,14 @@ Moteur **ligne par ligne**, testé sur les 30 tables :
 - **Modifications répercutées** : renommer un client ou changer une plaque / marque met à jour les copies (ordres de réparation, entretiens, visites techniques, rendez-vous, caisse, diagnostics).
 - **Contrôle de cohérence** : détecte les orphelins (y compris ceux créés par la synchronisation entre appareils) ; bouton « 🧹 » dans le menu ; nettoyage au choix, jamais automatique pour les factures.
 - Les suppressions en cascade se propagent au cloud par le moteur de synchronisation.
+
+### Caisse, validation hiérarchique et comptabilité (`finance.js`, `caisse.js`, `compta.js`, `validations.js`)
+
+- **Bons de caisse** (entrée, sortie, remise en banque, remise à la direction, réapprovisionnement) : saisis par le caissier, ils **ne comptent qu'une fois validés** par la hiérarchie. Les remises et réapprovisionnements ajustent le fond de caisse sans fausser le chiffre d'affaires ni les dépenses.
+- **Validation par la hiérarchie** : plafond par rôle (vide = illimité, 0 = aucun pouvoir), **séparation des tâches** (personne ne valide sa propre demande, administrateur compris ; désactivable pour une très petite structure), décisions **définitives**, **motif obligatoire** en cas de rejet, remises **confirmées par une autre personne** avec la référence de la preuve. Réglages : Validations → « Habilitations et plafonds » (administrateur).
+- **Caisse contrôlée** : PIN personnel à l'ouverture, une seule session ouverte, clôture avec comptage, explication de l'écart, mention des mouvements en attente et **visa de la hiérarchie** si l'écart dépasse la tolérance. Dépenses et paiements fournisseurs passent par la validation.
+- **Comptabilité SYSCOHADA** : écritures automatiques (ventes, encaissements, dépenses validées, factures fournisseurs, écarts, remises) régénérées sans doublon, saisie manuelle équilibrée, **visa**, levée de visa (administrateur, motif tracé), **contre-passation**, clôture et réouverture d'exercice avec à-nouveaux, états et **export FEC**.
+- **Côté serveur** : `supabase/migrations/20261123_caisse_compta.sql` applique les mêmes règles par triggers et RLS (45 tests dans `supabase/tests/caisse_compta.test.sql`).
 
 ### Base de données (Supabase)
 

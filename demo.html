@@ -43,8 +43,11 @@ footer b{color:var(--txt)}
       <li>7 interventions à différents stades, dont une en retard et une terminée non facturée</li>
       <li>4 factures (payée, partielle, impayée), 8 pièces dont une en rupture</li>
       <li>Rendez-vous, visites techniques et équipe d'atelier</li>
+      <li>4 comptes (administrateur, caissier, chef d'atelier, comptable) pour essayer la caisse validée par la hiérarchie et la comptabilité</li>
     </ul>
-    <div class="cred">Connexion :<br>Identifiant <code>demo</code> · mot de passe <code>Demo@Garage2026</code> (administrateur)</div>
+    <div class="cred">Connexion (mot de passe <code>Demo@Garage2026</code> pour tous) :<br>
+      <code>demo</code> administrateur · <code>caissier</code> saisit les bons de caisse · <code>chef</code> valide dans la limite de son plafond (100 000 F) · <code>comptable</code> tient la comptabilité<br>
+      <span style="font-size:12.5px;color:var(--sub)">Pour voir la validation par la hiérarchie : saisissez un bon avec « caissier », puis validez-le avec « chef ».</span></div>
     <button id="go" type="button">▶ Lancer la démonstration</button>
     <p class="note" id="msg" role="status"></p>
   </div>
@@ -169,7 +172,13 @@ footer b{color:var(--txt)}
         var d = build();
         localStorage.setItem('gp_db_v20', JSON.stringify(d.db));
         localStorage.setItem('gp_modules_v20', JSON.stringify(d.mods));
-        localStorage.setItem('gp_users_v19', JSON.stringify([{ id: 1, login: 'demo', name: 'Démonstration', pwd: hash, role: 'admin', status: 'actif' }]));
+        localStorage.setItem('gp_users_v19', JSON.stringify([
+          { id: 1, login: 'demo', name: 'Démonstration', pwd: hash, role: 'admin', status: 'actif' },
+          { id: 2, login: 'caissier', name: 'Awa (caissière)', pwd: hash, role: 'caissier', status: 'actif' },
+          { id: 3, login: 'chef', name: 'Koffi (chef d\'atelier)', pwd: hash, role: 'chef', status: 'actif' },
+          { id: 4, login: 'comptable', name: 'Fatou (comptable)', pwd: hash, role: 'comptable', status: 'actif' }
+        ]));
+        localStorage.setItem('gp_habilitations', JSON.stringify({ strict: false }));   /* l'administrateur seul peut tout essayer ; avec les autres comptes la hiérarchie s'applique */
         localStorage.setItem('gp_demo', '1');
         $('msg').textContent = 'Ouverture de l\'application…';
         location.href = 'index.html';
