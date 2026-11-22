@@ -110,6 +110,17 @@ Moteur **ligne par ligne**, testé sur les 30 tables :
 - **Vérification publique** : le QR ouvre `verif.html`, qui interroge la fonction SQL `verifier_document` (identifiant + partie secrète de l'empreinte) et affiche type, référence, date et émetteur à comparer avec le papier. Les documents sont enregistrés dans la table synchronisée `documents_imprimes` (immuable côté serveur : `supabase/migrations/20261124_documents_imprimes.sql`, 16 tests dans `supabase/tests/documents_imprimes.test.sql`).
 - Un document imprimé hors ligne n'est vérifiable qu'après synchronisation. `qr.js` est la bibliothèque *qrcode-generator* de Kazuhiko Arase (licence MIT).
 
+### Liens entre modules (`liens.js`)
+
+Revue d'interconnexion : parcours client → véhicule → ordre de réparation → facture → encaissement → caisse → comptabilité, et pièces → commandes → factures fournisseurs → règlements.
+
+- **Caisse ↔ dépenses** : une dépense validée payée en espèces ou mobile money sort de la caisse (sinon la compta créditait la caisse sans que le solde bouge) ; rejet, suppression ou passage en virement retirent le mouvement. Les dépenses **rejetées ou en attente** ne comptent plus dans les tableaux de bord, statistiques et états.
+- **Comptabilité** : une facture annulée n'est plus comptabilisée ; le règlement d'une facture fournisseur est écrit (D 401 / C 571) ; le taux de TVA suit Paramétrage.
+- **Factures clients** : modifier une facture garde son lien avec l'ordre de réparation et enregistre bien la modification ; un encaissement ne peut pas dépasser le reste à payer ; le statut suit un nouveau montant.
+- **Stock** : la quantité globale d'une pièce et ses quantités par dépôt restent alignées (une entrée ou sortie alimente le dépôt principal), donc l'affectation à un OR et l'inventaire voient le même stock.
+- **Fournisseurs** : la dette augmente à la réception d'une facture et baisse à son règlement ; règlement partiel suivi, jamais supérieur au restant dû ; les numéros FF ne repartent plus de zéro à chaque chargement (doublons d'identifiants) ; une commande déjà livrée demande confirmation avant une nouvelle réception.
+- **Atelier** : « véhicules en atelier » se déduit des ordres de réparation ouverts.
+
 ### Base de données (Supabase)
 
 - 30 tables « document » : `id` (texte) + `data` (JSON de l'enregistrement) + `updated_at` ; plus la table `profiles` (`login`, `nom`, `role`, `pages`, `statut`).

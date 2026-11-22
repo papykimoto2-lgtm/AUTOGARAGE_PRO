@@ -42,6 +42,8 @@
       if (s.categories) Object.assign(c.categories, s.categories);
       if (Array.isArray(s.regles)) c.regles = s.regles;
     }
+    /* le taux de TVA suit Paramétrage (une seule source), sauf valeur propre à la comptabilité */
+    if (!(s && typeof s.tva === 'number')) { try { var pt = parseFloat((JSON.parse(localStorage.getItem('gp_parametrage') || '{}') || {})['prm-tva']); if (isFinite(pt) && pt >= 0 && pt <= 100) c.tva = pt; } catch (x) {} }
     return c;
   }
   function saveCfg(c) { try { localStorage.setItem(CFG_KEY, JSON.stringify(c)); } catch (x) {} touch(); }
@@ -172,6 +174,7 @@
 
     /* 1. factures clients */
     (DB.factures || []).forEach(function (f) {
+      if (f.statut === 'Annulée' || f.statut === 'annulee') return;           /* une facture annulée n'est pas comptabilisée */
       var ttc = Number(f.montant) || 0; if (!(ttc > 0) || !f.date) return;
       var ht = r2(ttc / (1 + rate / 100)), tva = r2(ttc - ht);
       var lg = [L(cc.clients, ttc, 0, clients[f.client_id])]; lg.push(L(cc.ventes, 0, ht)); if (tva > 0) lg.push(L(cc.tvaCollectee, 0, tva));
@@ -183,7 +186,9 @@
       var m = Math.abs(Number(t.montant) || 0); if (!m || !t.date) return;
       var ca = cashAccount(t.mode), enc = t.transaction_type === 'encaissement';
       if (t.source === 'bon') {
-        var b = bonsParId[t.bonId]; if (!b || !b.ventile || !b.ventile.compte) return;       /* « à ventiler » : pas d'écriture tant que non ventilé */
+        var b = bonsParId[t.bonId];
+        if (b && b.lien && b.lien.type === 'ff' && !enc) { add('bon:' + b.id, t.date, ca[1], b.id, (b.motif || 'Règlement fournisseur') + ' — ' + b.tiers, [L(cc.fournisseurs, m, 0), L(ca[0], 0, m)]); return; }   /* règlement d'une facture fournisseur : D 401 / C trésorerie */
+        if (!b || !b.ventile || !b.ventile.compte) return;       /* « à ventiler » : pas d'écriture tant que non ventilé */
         add('bon:' + b.id, t.date, ca[1], b.id, (b.motif || 'Bon de caisse') + ' — ' + b.tiers, enc ? [L(ca[0], m, 0), L(b.ventile.compte, 0, m)] : [L(b.ventile.compte, m, 0), L(ca[0], 0, m)]);
         return;
       }
