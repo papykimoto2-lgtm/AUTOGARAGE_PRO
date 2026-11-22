@@ -53,22 +53,33 @@
     var map = (typeof _SYNC_TABLE_MAP !== 'undefined') ? _SYNC_TABLE_MAP : {};
     var out = {};
     Object.keys(map).forEach(function (k) { out[k] = map[k].table; });
+    var reg = typeof window._gpRegistered === 'function' ? window._gpRegistered() : {};
+    Object.keys(reg).forEach(function (k) { out[k] = reg[k]; });
     out.config = 'config';
     return out;
   }
 
-  /* « config » = une seule ligne : le paramétrage de l'entreprise */
+  /* « config » = quelques lignes : paramétrage de l'entreprise, habilitations (caisse/compta), paramètres comptables */
+  var CONFIG_KEYS = { parametrage: 'gp_parametrage', habilitations: 'gp_habilitations', compta: 'gp_compta_cfg' };
   function getArray(key) {
     if (key === 'config') {
-      try { var c = JSON.parse(localStorage.getItem('gp_parametrage') || 'null'); return c && typeof c === 'object' ? [Object.assign({ id: 'parametrage' }, c)] : []; } catch (x) { return []; }
+      var rows = [];
+      Object.keys(CONFIG_KEYS).forEach(function (id) {
+        try { var c = JSON.parse(localStorage.getItem(CONFIG_KEYS[id]) || 'null'); if (c && typeof c === 'object') rows.push(Object.assign({ id: id }, c)); } catch (x) {}
+      });
+      return rows;
     }
     return typeof window._gpGetArray === 'function' ? window._gpGetArray(key) : null;
   }
   function setArray(key, rows) {
     if (key === 'config') {
-      var r = rows[0]; if (!r) return true;
-      var c = Object.assign({}, r); delete c.id;
-      try { localStorage.setItem('gp_parametrage', JSON.stringify(c)); return true; } catch (x) { return false; }
+      rows.forEach(function (r) {
+        var lk = CONFIG_KEYS[r.id]; if (!lk) return;
+        var c = Object.assign({}, r); delete c.id;
+        try { localStorage.setItem(lk, JSON.stringify(c)); } catch (x) {}
+      });
+      try { window.dispatchEvent(new Event('gp-config-changed')); } catch (x) {}
+      return true;
     }
     return typeof window._gpSetArray === 'function' ? window._gpSetArray(key, rows) : false;
   }
@@ -221,11 +232,14 @@
 
   var result = { pushed: 0, deleted: 0, added: 0, updated: 0, removed: 0, conflicts: 0, errors: [] };
   var readOnly = {};                         /* tables que ce rôle n'a pas le droit d'écrire */
-  var configMissing = false;
+  var missing = {};                           /* tables absentes du serveur (migration non exécutée) */
 
   function noteError(key, e) {
     if (e && e.noAuth) return;
-    if (key === 'config' && e && (e.status === 404 || e.code === 'PGRST205' || e.code === '42P01')) { configMissing = true; return; }
+    if (e && (e.status === 404 || e.code === 'PGRST205' || e.code === '42P01')) {
+      if (!missing[key]) { missing[key] = true; console.warn('[Sync] table « ' + key + ' » absente du serveur : exécutez les migrations SQL du dossier supabase/migrations'); }
+      return;
+    }
     if (e && (e.status === 403 || e.code === '42501')) {
       if (!readOnly[key]) { readOnly[key] = true; toastMsg('Droits insuffisants pour synchroniser « ' + key + ' » : vos modifications restent sur cet appareil', 'info'); }
       return;
@@ -414,7 +428,7 @@
     if (DEMO || !window._cloudToken || !window._cloudToken() || !loadState()) { return Promise.resolve({ skipped: true }); }
     if (!navigator.onLine) { badge('offline'); return Promise.resolve({ offline: true }); }
     result = { pushed: 0, deleted: 0, added: 0, updated: 0, removed: 0, conflicts: 0, errors: [] };
-    var map = tables(), keys = (opts.keys && opts.keys.length ? opts.keys : Object.keys(map)).filter(function (k) { return map[k] && !(k === 'config' && configMissing); });
+    var map = tables(), keys = (opts.keys && opts.keys.length ? opts.keys : Object.keys(map)).filter(function (k) { return map[k] && !missing[k]; });
     var o = { changedKeys: {} };
     badge('syncing');
     return seq(keys, function (k) {

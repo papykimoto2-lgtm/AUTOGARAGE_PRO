@@ -169,15 +169,27 @@
   var MAIN = ['clients', 'vehicles', 'interventions', 'stock', 'factures', 'personnel', 'transactions'];
   var lsChanged = false;
 
+  /* Modules ajoutés (caisse, comptabilité…) : ils déclarent leur tableau vivant et leur table à la synchronisation */
+  var REGISTRY = {};
+  window._gpRegisterModule = function (key, def) { REGISTRY[key] = def; };
+  window._gpRegistered = function () { var o = {}; Object.keys(REGISTRY).forEach(function (k) { o[k] = REGISTRY[k].table; }); return o; };
+
   window._gpGetArray = function (key) {
+    if (REGISTRY[key]) return REGISTRY[key].get();
     if (MAIN.indexOf(key) !== -1) return (typeof DB !== 'undefined' && Array.isArray(DB[key])) ? DB[key] : null;
     if (GLOBALS[key]) return GLOBALS[key]();
     if (LS_MODULES[key]) { try { var a = JSON.parse(localStorage.getItem(LS_MODULES[key])); return Array.isArray(a) ? a : []; } catch (x) { return []; } }
     return null;
   };
   window._gpSetArray = function (key, data) {
+    if (REGISTRY[key]) {
+      var live = REGISTRY[key].get(); if (!live) return false;
+      var copy = data.slice(); live.length = 0; copy.forEach(function (r) { live.push(r); });
+      if (typeof REGISTRY[key].afterSet === 'function') REGISTRY[key].afterSet();
+      return true;
+    }
     if (MAIN.indexOf(key) !== -1) { if (typeof DB !== 'undefined' && DB[key] !== undefined) DB[key] = data; return true; }
-    if (GLOBALS[key]) { var a = GLOBALS[key](); if (a) { a.length = 0; data.forEach(function (r) { a.push(r); }); return true; } return false; }
+    if (GLOBALS[key]) { var a = GLOBALS[key](); if (a) { var cp = data.slice(); a.length = 0; cp.forEach(function (r) { a.push(r); }); return true; } return false; }
     if (LS_MODULES[key]) {
       try {
         var next = JSON.stringify(data);
