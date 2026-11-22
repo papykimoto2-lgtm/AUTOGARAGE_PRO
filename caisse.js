@@ -72,7 +72,7 @@
       DB.transactions.unshift(trx); b.trxId = trx.id;
       if (b.lien && b.lien.type === 'ff' && typeof DB_FACTURES_FOURN !== 'undefined') {
         var ff = DB_FACTURES_FOURN.find(function (f) { return f.id === b.lien.id; });
-        if (ff) { ff.statut = 'payee'; ff.datePaiement = b.date; ff.modePaiement = b.mode; }
+        if (ff) { if (window.GPLiens) GPLiens.reglerFF(ff, b.montant, b.mode, b.date); else { ff.statut = 'payee'; ff.datePaiement = b.date; ff.modePaiement = b.mode; } }
       }
     } else {
       /* remise / réapprovisionnement : mouvement de FONDS de la session (ni recette ni dépense) */
@@ -285,9 +285,17 @@
       var m = document.getElementById('modal-paiement-fourn'), ffId = m && m._currentFfId;
       var montant = parseFloat((document.getElementById('pf-montant-saisi') || {}).value) || 0;
       var mode = (document.getElementById('pf-mode') || {}).value || 'Espèces';
-      if (!ffId || !(montant > 0) || !needsValidation(montant)) return o.apply(this, arguments);
       var ff = DB_FACTURES_FOURN.find(function (f) { return f.id === ffId; });
-      if (!ff) return o.apply(this, arguments);
+      if (ff && montant > 0 && window.GPLiens) {
+        var reste = GPLiens.resteFF(ff);
+        if (montant > reste + 0.5) { F.toast('Montant supérieur au restant dû sur cette facture (' + fmt(reste) + ' F).', 'error'); return; }
+      }
+      if (!ffId || !(montant > 0) || !ff) return o.apply(this, arguments);
+      if (!needsValidation(montant)) {                                   /* pas de validation requise : règlement direct, suivi du restant dû */
+        var res = o.apply(this, arguments);
+        if (window.GPLiens) { var avant = Number(ff.montant_paye) || 0; ff.montant_paye = avant; ff.statut = 'a_payer'; GPLiens.reglerFF(ff, montant, mode); try { saveData(); if (typeof renderFournFactures === 'function') renderFournFactures(); if (typeof updateCaisseTab_FournBadge === 'function') updateCaisseTab_FournBadge(); } catch (x) {} }
+        return res;
+      }
       var r = createBon({ type: 'sortie', montant: montant, mode: /mobile|wave|orange|mtn/i.test(mode) ? MODES[1] : /carte/i.test(mode) ? MODES[2] : MODES[0], motif: 'Paiement facture fournisseur ' + (ff.ffNum || ff.id), tiers: ff.fourn || 'Fournisseur', piece: ff.ffNum || ff.id, lien: { type: 'ff', id: ff.id } }, true);
       if (!r.ok) { F.toast(r.why, 'error'); return; }
       closeModal('modal-paiement-fourn');
@@ -313,11 +321,52 @@
             d.valide = '— en attente —'; delete d.decideur_login; delete d.dateDecision; delete d.motifRejet;
           }
         });
-        persist();
+        reconcileDepTrx(); persist();
       } catch (e) { console.warn('[Caisse] dépense', e); }
       return r;
     };
     window.saveDepense._fin = true;
+  }
+
+  /* ── Dépenses validées ↔ mouvements de caisse ───────────────────────────
+     Une dépense validée payée en espèces / mobile money sort de la caisse : on tient un mouvement
+     « depense » (ref = n° de la dépense, donc dédoublonné dans l'état périodique). Les dépenses
+     antérieures au circuit de validation (sans statut) ne sont pas touchées. Idempotent. */
+  function depCaisse(d) {
+    if (d.vstatut !== 'valide') return false;
+    var k = typeof _caisseNormalMode === 'function' ? _caisseNormalMode(d.mode) : 'Especes';
+    return k === 'Especes' || k === 'Wave' || k === 'OrangeMoney' || k === 'MTNMoMo';
+  }
+  var RECONCILING = false;
+  function reconcileDepTrx() {
+    if (RECONCILING || typeof DB === 'undefined' || !DB.transactions || typeof DB_DEPENSES === 'undefined') return 0;
+    RECONCILING = true; var changed = 0;
+    try {
+      var deps = {}; DB_DEPENSES.forEach(function (d) { deps[d.id] = d; });
+      for (var i = DB.transactions.length - 1; i >= 0; i--) {                    /* mouvements orphelins : dépense supprimée, rejetée, modifiée en virement… */
+        var t = DB.transactions[i]; if (t.source !== 'depense') continue;
+        var d = deps[t.depId];
+        if (!d || !depCaisse(d)) { DB.transactions.splice(i, 1); changed++; }
+      }
+      DB_DEPENSES.forEach(function (d) {
+        if (!depCaisse(d)) return;
+        var m = -Math.abs(Number(d.montant) || 0); if (!m) return;
+        var t = DB.transactions.find(function (x) { return x.source === 'depense' && x.depId === d.id; });
+        if (!t) {
+          DB.transactions.unshift({ id: 'TRX-DEP-' + d.id, date: d.date, ref: d.id, client: d.benef || '', montant: m, mode: d.mode, notes: d.desc || '', source: 'depense', depId: d.id, transaction_type: 'depense', type: 'depense' });
+          changed++;
+        } else if (t.montant !== m || t.date !== d.date || t.mode !== d.mode || t.client !== (d.benef || '')) { t.montant = m; t.date = d.date; t.mode = d.mode; t.client = d.benef || ''; changed++; }
+      });
+      if (changed && typeof _caisseLocalSave === 'function') _caisseLocalSave();
+    } catch (e) { console.warn('[Caisse] dépenses ↔ caisse', e); }
+    RECONCILING = false; return changed;
+  }
+  function wrapSoldeEtRendus() {
+    ['_caisseSoldeSession', 'renderCaisse', 'renderDepenses'].forEach(function (n) {
+      var o = window[n]; if (typeof o !== 'function' || o._finDep) return;
+      window[n] = function () { reconcileDepTrx(); return o.apply(this, arguments); };
+      window[n]._finDep = true;
+    });
   }
 
   function decideDepense(id, decision, motif) {
@@ -330,6 +379,7 @@
     var me = F.who();
     d.vstatut = decision === 'valide' ? 'valide' : 'rejete'; d.decideur_login = me.login; d.decideur_nom = me.nom; d.dateDecision = F.nowISO();
     d.valide = decision === 'valide' ? me.nom : '— rejetée —'; if (decision === 'rejete') d.motifRejet = String(motif).trim();
+    reconcileDepTrx();
     try { if (typeof saveData === 'function') saveData(); } catch (x) {} F.save(); refresh();
     try { if (typeof renderDepenses === 'function') renderDepenses(); } catch (x) {}
     return { ok: true };
@@ -439,10 +489,10 @@
     if (t.hasAttribute('data-cp')) F.modal({ id: 'fin-cpb', title: 'Contre-passer le bon', html: '<p class="fin-note">Un bon inverse sera créé ; il devra être validé à son tour.</p><div class="form-group"><label class="form-label">Motif *</label><input class="form-control" id="fcp-m"></div>', buttons: [{ label: 'Annuler' }, { label: 'Contre-passer', cls: 'btn-danger', onClick: function (m) { var r = contrepasserBon(id, m.querySelector('#fcp-m').value); F.toast(r.ok ? 'Bon inverse soumis à validation' : r.why, r.ok ? 'success' : 'error'); return r.ok ? undefined : false; } }] });
   });
 
-  function init() { injectTabs(); wrapSwitchTab(); wrapOpen(); wrapClose(); wrapPaiementFourn(); wrapDepense(); }
+  function init() { injectTabs(); wrapSwitchTab(); wrapOpen(); wrapClose(); wrapPaiementFourn(); wrapDepense(); wrapSoldeEtRendus(); reconcileDepTrx(); }
   document.addEventListener('DOMContentLoaded', function () { init(); setTimeout(init, 1500); });
   window.addEventListener('fin-data-changed', function () { try { renderBonsTab(); } catch (x) {} });
 
   F.caisse = { TYPES: TYPES, createBon: createBon, decideBon: decideBon, confirmerRemise: confirmerRemise, contrepasserBon: contrepasserBon, decideDepense: decideDepense, decideVisaCloture: decideVisaCloture,
-    pending: pending, pinSet: pinSet, pinCheck: pinCheck, pinHas: pinHas, solde: solde, session: session, sessions: sessions, openBonModal: openBonModal, badgeSt: badgeSt, renderBonsTab: renderBonsTab, renderRapprochement: renderRapprochement };
+    pending: pending, reconcileDepTrx: reconcileDepTrx, pinSet: pinSet, pinCheck: pinCheck, pinHas: pinHas, solde: solde, session: session, sessions: sessions, openBonModal: openBonModal, badgeSt: badgeSt, renderBonsTab: renderBonsTab, renderRapprochement: renderRapprochement };
 })();

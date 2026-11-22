@@ -624,6 +624,7 @@ body:has(#app:not(.show)) { padding-bottom: 0 !important; }
 <script defer src="integrite.js"></script>
 <link rel="stylesheet" href="finance.css">
 <script defer src="finance.js"></script>
+<script defer src="liens.js"></script>
 <script defer src="caisse.js"></script>
 <script defer src="compta.js"></script>
 <script defer src="validations.js"></script>
@@ -7629,17 +7630,25 @@ function saveNewFacture() {
       DB.factures[idx] = {
         ...DB.factures[idx],
         client_id: parseInt(client_id),
-        or_id: orVal || DB.factures[idx].or_id_id,
+        or_id: orVal || DB.factures[idx].or_id,
         montant: ttcRaw,
         mode: mode === 'À crédit' ? '—' : mode,
         date: dateVal,
         nif_client: currentFactureType === 'FINE' ? ((document.getElementById('f-nif-client')||{}). value||'') : null,
       };
+      /* le statut suit le nouveau montant : une facture déjà réglée ne repasse pas « en attente » par erreur */
+      (function (f) {
+        if (f.statut === 'Annulée' || f.statut === 'annulee') return;
+        var paye = Number(f.montant_paye) || 0;
+        if (paye > 0) f.statut = paye >= f.montant ? 'Payée' : 'Partiel';
+      })(DB.factures[idx]);
       toast('Facture modifiée avec succès !', 'success');
     }
     closeModal('modal-facture');
     _factureEditId = null;
     renderFactures();
+    saveData();
+    if (typeof _renderDashKPIs === 'function') _renderDashKPIs();
     return;
   }
 
@@ -8721,9 +8730,9 @@ function renderRapports() {
   var nbTermines = DB.interventions.filter(function(o){return o.statut==='Terminé';}).length;
   var nbCours    = DB.interventions.filter(function(o){return o.statut==='En cours';}).length;
   var ca         = DB.transactions.filter(function(t){return t.date===today&&t.transaction_type === 'encaissement';}).reduce(function(s,t){return s+Math.abs(t.montant);},0);
-  var dep        = (typeof DB_DEPENSES!=='undefined') ? DB_DEPENSES.filter(function(d){return d.date===today;}).reduce(function(s,d){return s+(d.montant||0);},0) : 0;
+  var dep        = (typeof DB_DEPENSES!=='undefined') ? _depCompte().filter(function(d){return d.date===today;}).reduce(function(s,d){return s+(d.montant||0);},0) : 0;
   var benefNet   = ca - dep;
-  var enAtelier  = DB.vehicles.filter(function(v){return v.statut==='En atelier';}).length;
+  var enAtelier  = window.GPLiens ? GPLiens.nbVehEnAtelier() : DB.vehicles.filter(function(v){return v.statut==='En atelier';}).length;
   var vtUrgent   = (typeof DB_VT!=='undefined') ? DB_VT.filter(function(v){return v.statut==='expired'||v.statut==='urgent';}).length : 0;
   var stockCrit  = DB.stock.filter(function(p){return p.qty<=p.min;}).length;
   var techs      = DB.personnel.filter(function(p){return p.note;});
@@ -8874,7 +8883,7 @@ function genererRapport(type) {
     var solde  = totE - totD;
     var nbInterv  = (DB.interventions||[]).filter(function(i){ return (i.dateCreation||i.date||'').startsWith(periode); }).length;
     var nbTerm    = (DB.interventions||[]).filter(function(i){ return (i.dateCreation||i.date||'').startsWith(periode)&&i.statut==='Termin\u00e9'; }).length;
-    var nbVehAtel = (DB.vehicles||[]).filter(function(v){ return v.statut==='En atelier'; }).length;
+    var nbVehAtel = window.GPLiens ? GPLiens.nbVehEnAtelier() : (DB.vehicles||[]).filter(function(v){ return v.statut==='En atelier'; }).length;
     var nbCli = new Set(trxP.filter(function(t){return t.transaction_type==='encaissement';}).map(function(t){return t.client;})).size;
     body += '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:12px;font-weight:600;color:#9a3412">P\u00e9riode : '+periodeLabel+'</div>';
     body += '<div class="kgrid">'
@@ -8950,9 +8959,9 @@ function sendRapportWhatsApp(type) {
   const nbInterv   = DB.interventions.length;
   const nbTermines = DB.interventions.filter(o=>o.statut==='Terminé').length;
   const ca = DB.transactions.filter(t=>t.date===today&&t.transaction_type === 'encaissement').reduce((s,t)=>s+Math.abs(t.montant),0);
-  const dep = (typeof DB_DEPENSES!=='undefined') ? DB_DEPENSES.filter(d=>d.date===today).reduce((s,d)=>s+(d.montant||0),0) : 0;
+  const dep = (typeof DB_DEPENSES!=='undefined') ? _depCompte().filter(d=>d.date===today).reduce((s,d)=>s+(d.montant||0),0) : 0;
   const benefNet = ca - dep;
-  const enAtelier = DB.vehicles.filter(v=>v.statut==='En atelier').length;
+  const enAtelier = window.GPLiens ? GPLiens.nbVehEnAtelier() : DB.vehicles.filter(v=>v.statut==='En atelier').length;
   const techs = DB.personnel.filter(p=>p.note);
   const noteMoy = techs.length ? Math.round(techs.reduce((s,p)=>s+p.note,0)/techs.length*10)/10 : 0;
   const msg = encodeURIComponent(
@@ -8999,7 +9008,7 @@ function renderDashboardExtras() {
   const depEl = document.getElementById('dash-depenses-recent');
   if (depEl) {
     const todayDep = new Date().toISOString().slice(0, 10);
-    const depJour  = DB_DEPENSES.filter(d => d.date === todayDep);
+    const depJour  = _depCompte().filter(d => d.date === todayDep);
     const totalDep = depJour.reduce((s, d) => s + (d.montant || 0), 0);
     const recentes = depJour.slice(0, 3);
     depEl.innerHTML = recentes.length ? recentes.map(d => {
@@ -9151,7 +9160,7 @@ function renderStatsExtras() {
     });
     // Agréger Dépenses
     if (typeof DB_DEPENSES !== 'undefined') {
-      DB_DEPENSES.forEach(function(dep) {
+      _depCompte().forEach(function(dep) {
         var d = new Date(dep.date); var yr=d.getFullYear(); var mn=d.getMonth();
         var slot = mois.find(function(x){ return x.yr===yr && x.mn===mn; });
         if (slot) slot.dep += Math.abs(dep.montant||0);
@@ -9238,6 +9247,8 @@ const CATEGORIES_DEP = {
 };
 
 const DB_DEPENSES = [];
+/* Dépenses qui comptent dans les totaux : ni en attente de validation, ni rejetées */
+function _depCompte() { return DB_DEPENSES.filter(function (d) { return d.vstatut !== 'attente' && d.vstatut !== 'rejete'; }); }
 
 const DB_FOURNISSEURS = [];
 
@@ -9979,7 +9990,7 @@ function renderDepensesKPIs() {
   var now = new Date();
   var ym  = now.toISOString().slice(0, 7); // "YYYY-MM"
 
-  var depMois = DB_DEPENSES.filter(function(d) { return (d.date || '').slice(0, 7) === ym; });
+  var depMois = _depCompte().filter(function(d) { return (d.date || '').slice(0, 7) === ym; });
   var total   = depMois.reduce(function(s, d) { return s + (d.montant || 0); }, 0);
 
   var pieces   = depMois.filter(function(d) { return d.cat === 'pieces'; })  .reduce(function(s,d){return s+(d.montant||0);},0);
@@ -10072,7 +10083,7 @@ function renderDepensesChart() {
   // Calculer totaux réels par catégorie
   var totaux = {};
   var grandTotal = 0;
-  DB_DEPENSES.forEach(function(d) {
+  _depCompte().forEach(function(d) {
     totaux[d.cat] = (totaux[d.cat] || 0) + (d.montant || 0);
     grandTotal += (d.montant || 0);
   });
@@ -12201,6 +12212,9 @@ function saveEncaissement() {
   var facture = DB.factures.find(function(f) { return f.id === factureId; });
   if (!facture)                      { toast('Facture introuvable en base', 'error');           return; }
   if (facture.statut === 'Payée')    { toast('Cette facture est déjà soldée', 'error');         return; }
+  if (facture.statut === 'Annulée' || facture.statut === 'annulee') { toast('Cette facture est annulée', 'error'); return; }
+  var _resteAPayer = (Number(facture.montant) || 0) - (Number(facture.montant_paye) || 0);
+  if (montantVal > _resteAPayer + 0.5) { toast('Montant supérieur au reste à payer (' + _resteAPayer.toLocaleString('fr-FR') + ' F)', 'error'); return; }
 
   var client    = DB.clients.find(function(c) { return c.id === facture.client_id; });
   var clientNom = client ? client.nom : 'Client #' + facture.client_id;
@@ -12257,7 +12271,13 @@ function saveEncaissement() {
 // ═══════════════════════════════════════════════════════════
 const DB_FACTURES_FOURN = [];
 var _ffSeq = 1;
-function genFFId() { return 'FF-' + String(_ffSeq++).padStart(4,'0'); }
+function genFFId() {
+  /* la séquence repart de zéro à chaque chargement : on reprend après le plus grand numéro existant (sinon doublons d'identifiants) */
+  var max = 0;
+  DB_FACTURES_FOURN.forEach(function (f) { [f.id, f.ffNum].forEach(function (x) { var m = /^FF-(\d+)$/.exec(String(x || '')); if (m) max = Math.max(max, parseInt(m[1], 10)); }); });
+  if (_ffSeq <= max) _ffSeq = max + 1;
+  return 'FF-' + String(_ffSeq++).padStart(4,'0');
+}
 
 // ════════════════════════════════════════════════════════════
 // MOUVEMENT DE STOCK — LOGIQUE INTERACTIVE AMÉLIORÉE
@@ -12811,6 +12831,7 @@ function saveMvt() {
       return;
     }
 
+    if (cmd.statut === 'livree' && !window.confirm('Cette commande est déjà livrée : une nouvelle réception ajoute du stock et crée de nouvelles factures fournisseur. Continuer ?')) return;
     var nbCreees = 0;
 
     lignesRecues.forEach(function(item) {
@@ -12831,7 +12852,7 @@ function saveMvt() {
       // ── Créer la facture fournisseur ──
       var ffNum = genFFId();
       var ff = {
-        id       : genFFId(),
+        id       : ffNum,
         ffNum    : ffNum,
         blNum    : blNum,
         fourn    : fourn,
@@ -12850,6 +12871,7 @@ function saveMvt() {
         note     : note
       };
       DB_FACTURES_FOURN.push(ff);
+      if (window.GPLiens) GPLiens.detteFourn(ff.fourn, ff.montant);
 
       // ── Historique MVT ──
       DB_MVT_HISTORY.push({
@@ -12915,14 +12937,15 @@ function saveMvt() {
     var fourn   = ((document.getElementById('mvt-fourn')||{}). value || '').trim();
     var blNum   = ((document.getElementById('mvt-bl-num')||{}). value || '').trim()
                   || ('BL-' + new Date().getFullYear() + '-' + String(DB_FACTURES_FOURN.length+1).padStart(3,'0'));
-    var ffNum   = ((document.getElementById('mvt-ff-num')||{}). value || '').trim() || genFFId();
+    var ffIdB   = genFFId();
+    var ffNum   = ((document.getElementById('mvt-ff-num')||{}). value || '').trim() || ffIdB;
     var montant = parseFloat((document.getElementById('mvt-ff-montant')||{}). value) || (qty * pu);
     var blFile  = document.getElementById('mvt-bl-file');
     var ffFile  = document.getElementById('mvt-ff-file');
     var refDoc  = ((document.getElementById('mvt-ref-doc')||{}). value || '').trim();
 
     var ff = {
-      id      : genFFId(),
+      id      : ffIdB,
       ffNum   : ffNum,
       blNum   : blNum,
       fourn   : fourn || '—',
@@ -12941,6 +12964,7 @@ function saveMvt() {
       mvtId   : mvtId
     };
     DB_FACTURES_FOURN.push(ff);
+    if (window.GPLiens) GPLiens.detteFourn(ff.fourn, ff.montant);
     updateCaisseTab_FournBadge();
 
     DB_MVT_HISTORY.push({ id:mvtId, type:'entree', pieceId:piece.id, pieceNom:piece.nom, qty:qty, pu:pu, montant:montant, fourn:fourn, blNum:blNum, ffNum:ffNum, date:today, note:note });
@@ -14760,7 +14784,7 @@ function epRender() {
   if (df) recettes = recettes.filter(function(r){ return r.date <= df; });
 
   // ── Dépenses filtrées ──
-  var depenses = DB_DEPENSES.slice();
+  var depenses = _depCompte();
   if (dd) depenses = depenses.filter(function(d){ return d.date >= dd; });
   if (df) depenses = depenses.filter(function(d){ return d.date <= df; });
   if (catFilter) depenses = depenses.filter(function(d){ return d.cat === catFilter; });
@@ -15291,7 +15315,7 @@ function _sfConfirmOk() {
 function _renderDashKPIs() {
   var today = new Date().toISOString().slice(0,10);
   var interv   = DB.interventions.filter(function(o){ return o.date === today; }).length;
-  var enAtelier= DB.vehicles.filter(function(v){ return v.statut === 'En atelier'; }).length;
+  var enAtelier= window.GPLiens ? GPLiens.nbVehEnAtelier() : DB.vehicles.filter(function(v){ return v.statut === 'En atelier'; }).length;
   var enRetard = DB.interventions.filter(function(o){ return (o.statut==='En cours'||o.statut==='En attente')&&o.date<today; }).length;
   var caJour   = DB.transactions.filter(function(t){ return t.date===today&&t.transaction_type === 'encaissement'; }).reduce(function(s,t){return s+Math.abs(t.montant);},0);
   var techs    = DB.personnel.filter(function(p){return p.note;});
