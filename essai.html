@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex">
+<title>Essai gratuit 1 mois — AutoGarage Pro</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#060b18;--card:#0e1528;--card2:#131b30;--line:rgba(255,255,255,.1);--txt:#f0f4ff;--sub:#8899bb;--acc:#f97316;--yel:#eab308;--red:#f87171}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+main{max-width:560px;margin:0 auto;padding:22px 16px 48px}
+h1{font-size:22px}h2{font-size:17px;margin-bottom:6px}
+.sub{color:var(--sub);font-size:13px;margin:4px 0 18px}
+.pan{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+ul{padding-left:20px;color:var(--sub);font-size:14px;margin:8px 0}
+li{margin:3px 0}
+label{display:block;font-size:13px;color:var(--sub);margin:12px 0 4px}
+input{width:100%;min-height:48px;background:var(--card2);border:1px solid var(--line);border-radius:10px;color:var(--txt);font:16px inherit;padding:0 12px}
+input:focus{outline:2px solid var(--acc);outline-offset:1px}
+button{width:100%;min-height:52px;border:0;border-radius:11px;font:600 16px inherit;cursor:pointer;color:#fff;background:linear-gradient(135deg,#f97316,#f59e0b);margin-top:16px}
+button:disabled{opacity:.6;cursor:wait}
+.note{font-size:12.5px;color:var(--sub);margin-top:10px}
+#msg{color:var(--yel)}#msg.err{color:var(--red)}
+.big{font-size:30px;font-weight:700;color:var(--acc)}
+footer{text-align:center;color:var(--sub);font-size:12px;margin-top:26px}
+footer b{color:var(--txt)}
+</style>
+</head>
+<body>
+<main>
+  <h1>🔧 Auto<span style="color:var(--acc)">Garage</span> Pro — Essai gratuit</h1>
+  <p class="sub">Testez le logiciel complet avec <b>les données de votre garage</b>, pendant 1 mois.</p>
+
+  <div class="pan" id="running" hidden>
+    <h2>Votre essai est en cours</h2>
+    <p class="big" id="left"></p>
+    <p class="note" id="until"></p>
+    <button id="open" type="button">▶ Ouvrir AutoGarage Pro</button>
+  </div>
+
+  <div class="pan" id="form">
+    <h2>Activer mon essai de 30 jours</h2>
+    <ul>
+      <li>Toutes les fonctions : clients, véhicules, interventions, devis, stock, facturation, caisse, comptabilité…</li>
+      <li>Aucune donnée d'exemple : vous saisissez <b>vos</b> clients et vos véhicules</li>
+      <li>Fonctionne sur téléphone, tablette et ordinateur, même sans internet</li>
+      <li>Les données restent <b>sur cet appareil</b> (pas de synchronisation pendant l'essai) : utilisez toujours le même appareil et le même navigateur</li>
+    </ul>
+    <form id="f" autocomplete="off" novalidate>
+      <label for="garage">Nom du garage</label>
+      <input id="garage" maxlength="60" required placeholder="Ex. Garage Prestige">
+      <label for="nom">Votre nom</label>
+      <input id="nom" maxlength="60" required placeholder="Ex. Kouassi Yao">
+      <label for="login">Identifiant de connexion (sans @)</label>
+      <input id="login" maxlength="30" required autocapitalize="none" autocomplete="username" placeholder="Ex. prestige">
+      <label for="pwd">Mot de passe (6 caractères minimum)</label>
+      <input id="pwd" type="password" minlength="6" required autocomplete="new-password">
+      <button id="go" type="submit">🚀 Démarrer mon essai gratuit</button>
+      <p class="note" id="msg" role="status"></p>
+    </form>
+    <p class="note">À la fin des 30 jours l'accès se verrouille ; vous pourrez <b>exporter vos données</b> et nous contacter pour continuer sans rien perdre.</p>
+  </div>
+
+  <footer>Développé par <b>SANIX AFRICA</b> · Division Technologies<br>📞 +225 07 79 18 10 75 · ✉️ sanixafrica699@gmail.com</footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var DAYS = 30;
+  var DAY_MS = 86400000;
+  var OURS = /^(gp_|sf_)/;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function read(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+  function say(t, err) { var m = $('msg'); m.textContent = t; m.className = err ? 'err' : ''; }
+
+  function sha256(plain) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(plain)).then(function (b) {
+      return 'sha256:' + Array.from(new Uint8Array(b)).map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+    });
+  }
+
+  /* Données réelles déjà présentes sur l'appareil (hors démonstration fictive) ? */
+  function hasRealData() {
+    if (localStorage.getItem('gp_demo') === '1') {
+      var b = read('gp_demo_backup');
+      return !!(b && Object.keys(b).length);          /* des données d'avant la démo ont été sauvegardées */
+    }
+    var db = read('gp_db_v20');
+    if (db) {
+      for (var k in db) { if (Array.isArray(db[k]) && db[k].length) return true; }
+    }
+    var u = read('gp_users_v19');
+    return !!(u && u.length);
+  }
+
+  function wipe() {
+    Object.keys(localStorage).forEach(function (k) { if (OURS.test(k)) localStorage.removeItem(k); });
+  }
+
+  function showRunning(t) {
+    var left = Math.max(0, Math.ceil((t.end - Math.max(Date.now(), t.last || 0)) / DAY_MS));
+    $('form').hidden = true; $('running').hidden = false;
+    $('left').textContent = left > 0 ? left + ' jour' + (left > 1 ? 's' : '') + ' restant' + (left > 1 ? 's' : '') : 'Essai terminé';
+    $('until').textContent = 'Garage : ' + t.garage + ' · jusqu\'au ' + new Date(t.end).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+
+  function start(e) {
+    e.preventDefault();
+    var garage = $('garage').value.trim(), nom = $('nom').value.trim(), login = $('login').value.trim(), pwd = $('pwd').value;
+    if (!garage || !nom || !login) { say('Merci de remplir tous les champs.', true); return; }
+    if (login.indexOf('@') !== -1 || /\s/.test(login)) { say('L\'identifiant ne doit contenir ni « @ » ni espace.', true); return; }
+    if (pwd.length < 6) { say('Le mot de passe doit contenir au moins 6 caractères.', true); return; }
+    if (!window.crypto || !crypto.subtle) { say('Ce navigateur n\'autorise pas l\'essai (connexion sécurisée requise).', true); return; }
+    if (hasRealData()) { say('Cet appareil contient déjà des données AutoGarage Pro : pour ne rien écraser, ouvrez cette page sur un autre appareil ou navigateur.', true); return; }
+
+    var btn = $('go'); btn.disabled = true; say('Préparation de votre garage…');
+    sha256(pwd).then(function (hash) {
+      try {
+        wipe();                                                   /* retire d'éventuelles données de démonstration fictives */
+        var now = Date.now();
+        var empty = ['fournisseurs','depenses','entretien','vt','rdv','commandes','recettes','requisitions','depots','stock_depots','catalogue','sessions_caisse','lignes_fact','factures_fourn','transferts','outillage','outillage_prets','diagnostics','flottes','contrats_fl','carburant_fl','maint_prev','mvt_history'];
+        var mods = {}; empty.forEach(function (k) { mods[k] = []; });
+        localStorage.setItem('gp_db_v20', JSON.stringify({ clients: [], vehicles: [], interventions: [], stock: [], factures: [], personnel: [], transactions: [] }));
+        localStorage.setItem('gp_modules_v20', JSON.stringify(mods));
+        localStorage.setItem('gp_users_v19', JSON.stringify([{ id: 1, login: login, name: nom, pwd: hash, role: 'admin', status: 'actif' }]));
+        localStorage.setItem('gp_parametrage', JSON.stringify({ 'prm-raison': garage }));
+        localStorage.setItem('gp_trial', JSON.stringify({ v: 1, garage: garage, start: now, end: now + DAYS * DAY_MS, last: now }));
+        say('Ouverture de l\'application…');
+        location.href = 'index.html';
+      } catch (x) {
+        say('Impossible d\'enregistrer les données sur cet appareil (stockage plein ou bloqué).', true);
+        btn.disabled = false;
+      }
+    });
+  }
+
+  var t = read('gp_trial');
+  if (t && t.end) showRunning(t);        /* l'essai ne peut être démarré qu'une seule fois par appareil */
+  $('open').addEventListener('click', function () { location.href = 'index.html'; });
+  $('f').addEventListener('submit', start);
+})();
+</script>
+</body>
+</html>

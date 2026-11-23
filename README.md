@@ -6,6 +6,8 @@ Développé par **SANIX AFRICA — Division Technologies** · 📞 +225 07 79 18
 
 **En ligne :** https://autogarage-pro.vercel.app · **Essai sans risque :** `/demo.html` (données fictives, rien n'est envoyé au cloud)
 
+**Essai gratuit de 30 jours pour un prospect :** envoyer le lien `https://autogarage-pro.vercel.app/essai.html`. Le prospect crée son garage vide (nom, identifiant, mot de passe), travaille avec ses propres données stockées sur son appareil (pas de cloud), voit un bandeau « X jours restants », et l'accès se verrouille au bout de 30 jours (export de sauvegarde + contact). Un seul essai par appareil (`essai.html`, `essai.js`).
+
 ## Modules
 
 | Menu | Contenu |

@@ -12,7 +12,7 @@
   function $(id) { return document.getElementById(id); }
 
   /* Mode démonstration : aucune donnée ne quitte l'appareil (synchronisation coupée, connexion cloud refusée) */
-  var DEMO = false; try { DEMO = localStorage.getItem('gp_demo') === '1'; } catch (x) {}
+  var DEMO = false; try { DEMO = localStorage.getItem('gp_demo') === '1' || !!localStorage.getItem('gp_trial'); } catch (x) {}   /* essai gratuit = local aussi */
   if (DEMO) {
     try { Object.defineProperty(navigator, 'onLine', { get: function () { return false; }, configurable: true }); } catch (x) {}
     window._cloudToken = function () { return null; };
@@ -311,7 +311,7 @@
         var u = ($('login-user') && $('login-user').value || '').trim();
         var pw = $('login-pass') && $('login-pass').value || '';
         if (u.indexOf('@') !== -1) {
-          if (DEMO) { showLoginError('Démonstration en cours : connexion cloud désactivée. Utilisez « demo » ou quittez la démonstration (demo.html).'); return; }
+          if (DEMO) { showLoginError('Mode essai / démonstration : connexion cloud désactivée. Utilisez votre identifiant (sans @).'); return; }
           if (!pw) { showLoginError('Identifiant et mot de passe obligatoires'); return; }
           rememberId(u.toLowerCase());
           cloudLogin(u.toLowerCase(), pw, isRemember());
