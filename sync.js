@@ -16,7 +16,7 @@
   var FULL_EVERY = 90 * 1000;    /* cycle complet automatique */
   var UNSHIFT_KEYS = { interventions: 1, factures: 1, transactions: 1, depenses: 1, commandes: 1, sessions_caisse: 1 };
 
-  var DEMO = false; try { DEMO = localStorage.getItem('gp_demo') === '1'; } catch (x) {}
+  var DEMO = false; try { DEMO = localStorage.getItem('gp_demo') === '1' || !!localStorage.getItem('gp_trial'); } catch (x) {}
 
   function toastMsg(m, t) { if (typeof toast === 'function') toast(m, t || 'info'); }
   function badge(s) { if (typeof _syncSetBadge === 'function') { try { _syncSetBadge(s); } catch (x) {} } }
